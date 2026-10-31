@@ -9,20 +9,28 @@ export interface MapMarker {
   label: string;
 }
 
-const ICONS: Record<MapMarker["kind"], { emoji: string; bg: string }> = {
-  wearer: { emoji: "🧓", bg: "#0d9488" },
-  home: { emoji: "🏠", bg: "#2563eb" },
-  alert: { emoji: "🚨", bg: "#e11d48" },
+const ICONS: Record<MapMarker["kind"], { label: string; bg: string; dot: string; border: string }> = {
+  wearer: { label: "Wearer", bg: "#0f172a", dot: "#38bdf8", border: "#ffffff" },
+  home: { label: "Home", bg: "#2563eb", dot: "#ffffff", border: "#ffffff" },
+  alert: { label: "Alert", bg: "#e11d48", dot: "#ffffff", border: "#ffffff" },
 };
 
 function divIcon(kind: MapMarker["kind"]) {
-  const { emoji, bg } = ICONS[kind];
+  const { bg, dot } = ICONS[kind];
+  const isAlert = kind === "alert";
   return L.divIcon({
     className: "",
-    html: `<div style="width:38px;height:38px;border-radius:50% 50% 50% 4px;background:${bg};display:flex;align-items:center;justify-content:center;font-size:19px;box-shadow:0 2px 8px rgba(0,0,0,.35);border:2.5px solid #fff;transform:rotate(0deg)">${emoji}</div>`,
-    iconSize: [38, 38],
-    iconAnchor: [19, 36],
-    popupAnchor: [0, -34],
+    html: `
+      <div style="position:relative;display:flex;align-items:center;justify-content:center;width:34px;height:34px;">
+        ${isAlert ? `<div style="position:absolute;inset:-6px;border-radius:9999px;background:#e11d48;opacity:0.3;animation:ping 1.5s cubic-bezier(0,0,0.2,1) infinite;"></div>` : ''}
+        <div style="width:30px;height:30px;border-radius:9999px;background:${bg};border:2.5px solid #ffffff;box-shadow:0 3px 8px rgba(15,23,42,0.25);display:flex;align-items:center;justify-content:center;">
+          <div style="width:9px;height:9px;border-radius:9999px;background:${dot};"></div>
+        </div>
+      </div>
+    `,
+    iconSize: [34, 34],
+    iconAnchor: [17, 17],
+    popupAnchor: [0, -20],
   });
 }
 

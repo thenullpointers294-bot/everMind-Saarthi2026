@@ -52,13 +52,15 @@ export default function WearerReminders() {
                 </p>
               </div>
               {done ? (
-                <span className="text-2xl">✅</span>
+                <div className="h-9 w-9 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold text-sm">
+                  ✓
+                </div>
               ) : (
                 <button
                   onClick={() => markDone(r.id)}
-                  className="rounded-xl bg-teal-600 text-white px-4 py-3 font-bold text-sm active:scale-95 transition-transform"
+                  className="rounded-xl bg-slate-900 hover:bg-slate-800 text-white px-4 py-2.5 font-semibold text-xs active:scale-95 transition-all shadow-sm cursor-pointer"
                 >
-                  Done ✓
+                  Done
                 </button>
               )}
             </div>

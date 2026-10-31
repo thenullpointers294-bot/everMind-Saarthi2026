@@ -1,4 +1,15 @@
 import { HashRouter, Routes, Route, Navigate, Outlet, Link } from "react-router-dom";
+import { 
+  Home, 
+  Clock, 
+  Sparkles, 
+  Heart, 
+  MapPin, 
+  Bell, 
+  SlidersHorizontal, 
+  History as HistoryIcon,
+  Settings as SettingsIcon 
+} from "lucide-react";
 import { AppProvider, useApp } from "./context/AppContext";
 import { BottomNav, type TabDef } from "./components/ui";
 import AuthPage from "./pages/AuthPage";
@@ -15,17 +26,17 @@ import Simulator from "./pages/dev/Simulator";
 import ApiContract from "./pages/dev/ApiContract";
 
 const WEARER_TABS: TabDef[] = [
-  { to: "/wearer", label: "Home", icon: "🏠" },
-  { to: "/wearer/reminders", label: "Reminders", icon: "⏰" },
-  { to: "/wearer/games", label: "Games", icon: "🎲" },
-  { to: "/wearer/family", label: "Family", icon: "👪" },
+  { to: "/wearer", label: "Home", icon: <Home className="w-5 h-5" /> },
+  { to: "/wearer/reminders", label: "Reminders", icon: <Clock className="w-5 h-5" /> },
+  { to: "/wearer/games", label: "Games", icon: <Sparkles className="w-5 h-5" /> },
+  { to: "/wearer/family", label: "Family", icon: <Heart className="w-5 h-5" /> },
 ];
 
 const CAREGIVER_TABS: TabDef[] = [
-  { to: "/caregiver", label: "Dashboard", icon: "🗺️" },
-  { to: "/caregiver/alerts", label: "Alerts", icon: "🚨" },
-  { to: "/caregiver/manage", label: "Manage", icon: "🧩" },
-  { to: "/caregiver/history", label: "History", icon: "🕘" },
+  { to: "/caregiver", label: "Dashboard", icon: <MapPin className="w-5 h-5" /> },
+  { to: "/caregiver/alerts", label: "Alerts", icon: <Bell className="w-5 h-5" /> },
+  { to: "/caregiver/manage", label: "Manage", icon: <SlidersHorizontal className="w-5 h-5" /> },
+  { to: "/caregiver/history", label: "History", icon: <HistoryIcon className="w-5 h-5" /> },
 ];
 
 function SettingsFab() {
@@ -33,9 +44,9 @@ function SettingsFab() {
     <Link
       to="/settings"
       aria-label="Settings"
-      className="fixed top-4 right-4 z-[1001] h-10 w-10 rounded-full bg-white/90 backdrop-blur shadow-md border border-slate-200 flex items-center justify-center text-lg"
+      className="fixed top-4 right-4 z-[1001] h-10 w-10 rounded-full bg-white/80 backdrop-blur-md shadow-sm border border-slate-200/80 flex items-center justify-center text-slate-600 hover:text-slate-900 hover:bg-white transition-all active:scale-95"
     >
-      ⚙️
+      <SettingsIcon className="w-4 h-4" />
     </Link>
   );
 }

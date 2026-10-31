@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
+import { ShieldCheck, User, Users, Eye, EyeOff } from "lucide-react";
 import { signIn, signUp, type AccountRole } from "../services/authService";
 import { DemoBadge } from "../components/ui";
 
@@ -39,24 +40,30 @@ export default function AuthPage() {
     }
   };
 
-  const input =
-    "w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-base text-slate-800 placeholder:text-slate-400 focus:border-teal-500 focus:ring-2 focus:ring-teal-100 outline-none transition";
+  const inputClass =
+    "w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-800 placeholder:text-slate-400 focus:border-slate-800 focus:ring-1 focus:ring-slate-800 outline-none transition";
 
   return (
-    <div className="min-h-dvh bg-gradient-to-b from-teal-600 via-teal-500 to-emerald-500 flex flex-col">
-      {/* Brand */}
-      <div className="px-6 pt-12 pb-8 text-center text-white">
-        <div className="text-5xl">🛡️</div>
-        <h1 className="mt-2 text-3xl font-extrabold tracking-tight">Memory Guardian</h1>
-        <p className="text-teal-50 font-medium">Remember. Stay Safe. Stay Connected.</p>
-        <div className="mt-2 flex justify-center"><DemoBadge /></div>
-      </div>
+    <div className="min-h-dvh bg-slate-50 flex flex-col justify-between p-4 sm:p-6">
+      <div className="max-w-sm w-full mx-auto pt-6 pb-4">
+        {/* Brand Header */}
+        <div className="text-center mb-8">
+          <div className="inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-slate-900 text-white mb-3 shadow-sm">
+            <ShieldCheck className="w-6 h-6 stroke-[1.75]" />
+          </div>
+          <h1 className="text-2xl font-bold tracking-tight text-slate-900">EverMind</h1>
+          <p className="text-xs text-slate-500 font-medium tracking-wide mt-1">
+            Remember. Stay Safe. Stay Connected.
+          </p>
+          <div className="mt-2.5 flex justify-center">
+            <DemoBadge />
+          </div>
+        </div>
 
-      {/* Card */}
-      <div className="flex-1 bg-slate-50 rounded-t-[2rem] px-5 pt-6 pb-10 shadow-2xl">
-        <div className="max-w-sm mx-auto">
-          {/* Mode tabs */}
-          <div className="grid grid-cols-2 rounded-2xl bg-slate-200 p-1 mb-6">
+        {/* Card */}
+        <div className="bg-white rounded-2xl border border-slate-200/80 p-6 shadow-[0_1px_3px_rgba(15,23,42,0.04)]">
+          {/* Segmented Mode tabs */}
+          <div className="grid grid-cols-2 rounded-xl bg-slate-100 p-1 mb-6 text-xs font-semibold">
             {(["login", "signup"] as Mode[]).map((m) => (
               <button
                 key={m}
@@ -65,52 +72,58 @@ export default function AuthPage() {
                   setMode(m);
                   setError("");
                 }}
-                className={`rounded-xl py-2.5 text-sm font-bold transition-all ${
-                  mode === m ? "bg-white text-teal-700 shadow" : "text-slate-500"
+                className={`rounded-lg py-2 transition-all cursor-pointer ${
+                  mode === m
+                    ? "bg-white text-slate-900 shadow-sm"
+                    : "text-slate-500 hover:text-slate-700"
                 }`}
               >
-                {m === "login" ? "Log in" : "Sign up"}
+                {m === "login" ? "Sign In" : "Register"}
               </button>
             ))}
           </div>
 
-          <h2 className="text-xl font-bold text-slate-900">
-            {mode === "login" ? "Welcome back 👋" : "Create your account"}
-          </h2>
-          <p className="text-sm text-slate-500 mb-5">
-            {mode === "login"
-              ? "Log in to continue to your dashboard."
-              : "Patients receive a unique code that caretakers use to connect."}
-          </p>
-
           <form onSubmit={submit} className="space-y-4">
-            {/* Role dropdown */}
+            {/* Role selection pills */}
             <div>
-              <label className="block text-xs font-bold uppercase tracking-wide text-slate-500 mb-1.5">
-                I am a
+              <label className="block text-[11px] font-semibold uppercase tracking-wider text-slate-500 mb-2">
+                I am using EverMind as
               </label>
-              <div className="relative">
-                <select
-                  value={role}
-                  onChange={(e) => setRole(e.target.value as AccountRole)}
-                  className={`${input} appearance-none pr-10 font-semibold`}
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={() => setRole("patient")}
+                  className={`flex flex-col items-center gap-1.5 p-3 rounded-xl border text-xs font-medium transition cursor-pointer ${
+                    role === "patient"
+                      ? "border-slate-900 bg-slate-900 text-white"
+                      : "border-slate-200 bg-white text-slate-600 hover:border-slate-300"
+                  }`}
                 >
-                  <option value="patient">🧓 Patient (wears the pendant)</option>
-                  <option value="caregiver">🤝 Caretaker (family / caregiver)</option>
-                </select>
-                <span className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-slate-400">
-                  ▾
-                </span>
+                  <User className="w-4 h-4" />
+                  <span>Wearer</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setRole("caregiver")}
+                  className={`flex flex-col items-center gap-1.5 p-3 rounded-xl border text-xs font-medium transition cursor-pointer ${
+                    role === "caregiver"
+                      ? "border-slate-900 bg-slate-900 text-white"
+                      : "border-slate-200 bg-white text-slate-600 hover:border-slate-300"
+                  }`}
+                >
+                  <Users className="w-4 h-4" />
+                  <span>Caregiver</span>
+                </button>
               </div>
             </div>
 
             {mode === "signup" && (
               <div>
-                <label className="block text-xs font-bold uppercase tracking-wide text-slate-500 mb-1.5">
+                <label className="block text-[11px] font-semibold uppercase tracking-wider text-slate-500 mb-1">
                   Full name
                 </label>
                 <input
-                  className={input}
+                  className={inputClass}
                   placeholder={role === "patient" ? "e.g. Ramesh Sharma" : "e.g. Asha Sharma"}
                   value={name}
                   onChange={(e) => setName(e.target.value)}
@@ -121,11 +134,11 @@ export default function AuthPage() {
             )}
 
             <div>
-              <label className="block text-xs font-bold uppercase tracking-wide text-slate-500 mb-1.5">
+              <label className="block text-[11px] font-semibold uppercase tracking-wider text-slate-500 mb-1">
                 Email
               </label>
               <input
-                className={input}
+                className={inputClass}
                 type="email"
                 placeholder="you@example.com"
                 value={email}
@@ -136,14 +149,14 @@ export default function AuthPage() {
             </div>
 
             <div>
-              <label className="block text-xs font-bold uppercase tracking-wide text-slate-500 mb-1.5">
+              <label className="block text-[11px] font-semibold uppercase tracking-wider text-slate-500 mb-1">
                 Password
               </label>
               <div className="relative">
                 <input
-                  className={`${input} pr-16`}
+                  className={`${inputClass} pr-10`}
                   type={showPw ? "text" : "password"}
-                  placeholder={mode === "signup" ? "At least 6 characters" : "Your password"}
+                  placeholder={mode === "signup" ? "At least 6 characters" : "Enter password"}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   autoComplete={mode === "signup" ? "new-password" : "current-password"}
@@ -153,20 +166,20 @@ export default function AuthPage() {
                 <button
                   type="button"
                   onClick={() => setShowPw((s) => !s)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-teal-700"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
                 >
-                  {showPw ? "Hide" : "Show"}
+                  {showPw ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
               </div>
             </div>
 
             {mode === "signup" && (
               <div>
-                <label className="block text-xs font-bold uppercase tracking-wide text-slate-500 mb-1.5">
+                <label className="block text-[11px] font-semibold uppercase tracking-wider text-slate-500 mb-1">
                   Confirm password
                 </label>
                 <input
-                  className={input}
+                  className={inputClass}
                   type={showPw ? "text" : "password"}
                   placeholder="Repeat password"
                   value={confirm}
@@ -178,7 +191,7 @@ export default function AuthPage() {
             )}
 
             {error && (
-              <div className="rounded-xl bg-rose-50 border border-rose-200 px-4 py-3 text-sm text-rose-700">
+              <div className="rounded-xl bg-rose-50 border border-rose-200/80 p-3 text-xs text-rose-700">
                 {error}
               </div>
             )}
@@ -186,32 +199,33 @@ export default function AuthPage() {
             <button
               type="submit"
               disabled={busy}
-              className="w-full rounded-2xl bg-teal-600 hover:bg-teal-700 disabled:opacity-60 text-white py-3.5 text-base font-bold shadow-lg shadow-teal-200 active:scale-[0.98] transition"
+              className="w-full rounded-xl bg-slate-900 hover:bg-slate-800 disabled:opacity-50 text-white py-3 text-sm font-semibold tracking-tight transition shadow-sm active:scale-[0.99] cursor-pointer mt-2"
             >
-              {busy ? "Please wait…" : mode === "login" ? "Log in" : "Create account"}
+              {busy ? "Please wait…" : mode === "login" ? "Sign In" : "Create Account"}
             </button>
           </form>
 
-          <p className="mt-5 text-center text-sm text-slate-500">
-            {mode === "login" ? "New to Memory Guardian? " : "Already have an account? "}
+          <p className="mt-5 text-center text-xs text-slate-500">
+            {mode === "login" ? "New to EverMind? " : "Already registered? "}
             <button
               type="button"
               onClick={() => {
                 setMode(mode === "login" ? "signup" : "login");
                 setError("");
               }}
-              className="font-bold text-teal-700"
+              className="font-semibold text-slate-900 hover:underline cursor-pointer"
             >
-              {mode === "login" ? "Sign up" : "Log in"}
+              {mode === "login" ? "Create an account" : "Sign in here"}
             </button>
-          </p>
-
-          <p className="mt-8 text-center text-[11px] text-slate-400 leading-relaxed">
-            Memory Guardian is a supportive safety &amp; routine companion. It is{" "}
-            <b>not a medical device</b> and does not diagnose, prevent, treat or cure any condition.
           </p>
         </div>
       </div>
+
+      {/* Subtle Disclaimer Footer */}
+      <footer className="text-center text-[11px] text-slate-400 max-w-sm mx-auto pb-4 leading-relaxed">
+        EverMind is a supportive routine &amp; safety companion. It is{" "}
+        <span className="font-medium text-slate-500">not a medical device</span> and does not diagnose, treat, or cure medical conditions.
+      </footer>
     </div>
   );
 }

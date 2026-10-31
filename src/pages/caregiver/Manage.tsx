@@ -1,6 +1,20 @@
 import { useEffect, useRef, useState } from "react";
 import { QRCodeSVG } from "qrcode.react";
 import { Html5Qrcode } from "html5-qrcode";
+import { 
+  Clock, 
+  Users, 
+  QrCode, 
+  MapPin, 
+  Plus, 
+  Trash2, 
+  Edit3, 
+  Camera, 
+  Sparkles,
+  Save,
+  Radio,
+  Home
+} from "lucide-react";
 import { useApp } from "../../context/AppContext";
 import {
   saveReminder,
@@ -22,46 +36,49 @@ function ReminderEditor({ initial, onClose }: { initial?: Reminder; onClose: () 
     initial ?? { id: "r-" + Date.now(), title: "", time: "09:00", days: [], type: "medicine" }
   );
   return (
-    <div className="rounded-2xl border-2 border-teal-200 bg-teal-50/50 p-4 space-y-3">
+    <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 space-y-3">
       <input
         value={r.title}
         onChange={(e) => setR({ ...r, title: e.target.value })}
-        placeholder="Reminder title"
-        className="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm bg-white"
+        placeholder="Reminder title (e.g. Morning Blood Pressure Pill)"
+        className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-medium text-slate-800 outline-none focus:border-slate-800 focus:ring-1 focus:ring-slate-800 transition"
       />
       <div className="flex gap-2">
         <input
           type="time"
           value={r.time}
           onChange={(e) => setR({ ...r, time: e.target.value })}
-          className="rounded-xl border border-slate-300 px-3 py-2 text-sm bg-white"
+          className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-mono font-medium text-slate-800 outline-none focus:border-slate-800 transition"
         />
         <select
           value={r.type}
           onChange={(e) => setR({ ...r, type: e.target.value as Reminder["type"] })}
-          className="flex-1 rounded-xl border border-slate-300 px-3 py-2 text-sm bg-white"
+          className="flex-1 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-medium text-slate-800 outline-none focus:border-slate-800 transition"
         >
           {Object.keys(REMINDER_ICONS).map((t) => (
             <option key={t} value={t}>
-              {REMINDER_ICONS[t as Reminder["type"]]} {t}
+              {REMINDER_ICONS[t as Reminder["type"]]} {t.charAt(0).toUpperCase() + t.slice(1)}
             </option>
           ))}
         </select>
       </div>
       <div>
-        <p className="text-xs text-slate-500 mb-1">Days (none selected = every day)</p>
+        <p className="text-[11px] text-slate-500 mb-1.5 font-medium">Repeat Days (all unselected = every day)</p>
         <div className="flex gap-1.5">
           {DAY_LABELS.map((d, i) => (
             <button
               key={i}
+              type="button"
               onClick={() =>
                 setR({
                   ...r,
                   days: r.days.includes(i) ? r.days.filter((x) => x !== i) : [...r.days, i],
                 })
               }
-              className={`h-8 w-8 rounded-full text-xs font-bold ${
-                r.days.includes(i) ? "bg-teal-600 text-white" : "bg-white border border-slate-300 text-slate-500"
+              className={`h-7 w-7 rounded-lg text-xs font-semibold transition cursor-pointer ${
+                r.days.includes(i)
+                  ? "bg-slate-900 text-white"
+                  : "bg-white border border-slate-200 text-slate-600 hover:border-slate-300"
               }`}
             >
               {d}
@@ -69,19 +86,24 @@ function ReminderEditor({ initial, onClose }: { initial?: Reminder; onClose: () 
           ))}
         </div>
       </div>
-      <div className="flex gap-2">
+      <div className="flex gap-2 pt-1">
         <button
+          type="button"
           onClick={() => {
             if (r.title.trim()) {
               saveReminder(r);
               onClose();
             }
           }}
-          className="flex-1 rounded-xl bg-teal-600 text-white py-2 text-sm font-bold"
+          className="flex-1 rounded-xl bg-slate-900 hover:bg-slate-800 text-white py-2 text-xs font-semibold transition cursor-pointer"
         >
-          Save
+          Save Reminder
         </button>
-        <button onClick={onClose} className="rounded-xl bg-slate-200 px-4 py-2 text-sm font-bold text-slate-600">
+        <button
+          type="button"
+          onClick={onClose}
+          className="rounded-xl border border-slate-200 bg-white hover:bg-slate-100 px-3.5 py-2 text-xs font-medium text-slate-600 transition cursor-pointer"
+        >
           Cancel
         </button>
       </div>
@@ -96,12 +118,16 @@ function RemindersSection() {
   return (
     <Card>
       <div className="flex items-center justify-between mb-3">
-        <h2 className="font-bold text-slate-800">⏰ Reminders</h2>
+        <div className="flex items-center gap-2">
+          <Clock className="w-4 h-4 text-slate-700" />
+          <h2 className="font-semibold text-slate-900 text-sm">Daily Reminders</h2>
+        </div>
         <button
           onClick={() => setAdding(true)}
-          className="rounded-lg bg-teal-600 text-white text-xs font-bold px-3 py-1.5"
+          className="rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold px-3 py-1.5 flex items-center gap-1 transition cursor-pointer"
         >
-          + Add
+          <Plus className="w-3.5 h-3.5" />
+          <span>Add</span>
         </button>
       </div>
       <div className="space-y-2">
@@ -110,17 +136,27 @@ function RemindersSection() {
           editing === r.id ? (
             <ReminderEditor key={r.id} initial={r} onClose={() => setEditing(null)} />
           ) : (
-            <div key={r.id} className="flex items-center gap-2 rounded-xl bg-slate-50 px-3 py-2">
-              <span className="text-lg">{REMINDER_ICONS[r.type]}</span>
-              <div className="flex-1">
-                <p className="text-sm font-semibold text-slate-700">{r.title}</p>
-                <p className="text-xs text-slate-400">
+            <div key={r.id} className="flex items-center gap-3 rounded-xl bg-slate-50 border border-slate-100 p-3">
+              <span className="text-base">{REMINDER_ICONS[r.type]}</span>
+              <div className="flex-1 min-w-0">
+                <p className="text-xs font-semibold text-slate-900 truncate">{r.title}</p>
+                <p className="text-[11px] text-slate-400">
                   {formatTime12(r.time)} ·{" "}
-                  {r.days.length === 0 ? "every day" : r.days.map((d) => DAY_LABELS[d]).join(" ")}
+                  {r.days.length === 0 ? "Daily" : r.days.map((d) => DAY_LABELS[d]).join(" ")}
                 </p>
               </div>
-              <button onClick={() => setEditing(r.id)} className="text-sm px-2">✏️</button>
-              <button onClick={() => deleteReminder(r.id)} className="text-sm px-2">🗑️</button>
+              <button 
+                onClick={() => setEditing(r.id)} 
+                className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-200 transition cursor-pointer"
+              >
+                <Edit3 className="w-3.5 h-3.5" />
+              </button>
+              <button 
+                onClick={() => deleteReminder(r.id)} 
+                className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition cursor-pointer"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+              </button>
             </div>
           )
         )}
@@ -137,48 +173,51 @@ function ContactsSection() {
   const Editor = ({ c }: { c: Contact }) => {
     const [v, setV] = useState(c);
     return (
-      <div className="rounded-2xl border-2 border-teal-200 bg-teal-50/50 p-4 space-y-2">
+      <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 space-y-2.5">
         <input
           value={v.name}
           onChange={(e) => setV({ ...v, name: e.target.value })}
-          placeholder="Name"
-          className="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm bg-white"
+          placeholder="Contact Name"
+          className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-medium text-slate-800 outline-none focus:border-slate-800 focus:ring-1 focus:ring-slate-800 transition"
         />
         <input
           value={v.relation}
           onChange={(e) => setV({ ...v, relation: e.target.value })}
-          placeholder="Relation (e.g. Daughter)"
-          className="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm bg-white"
+          placeholder="Relationship (e.g. Daughter, Caretaker)"
+          className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-medium text-slate-800 outline-none focus:border-slate-800 focus:ring-1 focus:ring-slate-800 transition"
         />
         <input
           value={v.phone}
           onChange={(e) => setV({ ...v, phone: e.target.value })}
-          placeholder="Phone"
-          className="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm bg-white"
+          placeholder="Phone Number (+91 98765 43210)"
+          className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-mono font-medium text-slate-800 outline-none focus:border-slate-800 focus:ring-1 focus:ring-slate-800 transition"
         />
-        <label className="flex items-center gap-2 text-sm text-slate-600">
+        <label className="flex items-center gap-2 text-xs font-medium text-slate-600 pt-1 cursor-pointer">
           <input
             type="checkbox"
             checked={Boolean(v.isPrimary)}
             onChange={(e) => setV({ ...v, isPrimary: e.target.checked })}
+            className="rounded border-slate-300 text-slate-900 focus:ring-slate-800"
           />
-          Primary contact ⭐
+          <span>Set as Primary Contact</span>
         </label>
-        <div className="flex gap-2">
+        <div className="flex gap-2 pt-1">
           <button
+            type="button"
             onClick={() => {
               if (v.name.trim()) {
                 saveContact(v);
                 setEditing(null);
               }
             }}
-            className="flex-1 rounded-xl bg-teal-600 text-white py-2 text-sm font-bold"
+            className="flex-1 rounded-xl bg-slate-900 hover:bg-slate-800 text-white py-2 text-xs font-semibold transition cursor-pointer"
           >
-            Save
+            Save Contact
           </button>
           <button
+            type="button"
             onClick={() => setEditing(null)}
-            className="rounded-xl bg-slate-200 px-4 py-2 text-sm font-bold text-slate-600"
+            className="rounded-xl border border-slate-200 bg-white hover:bg-slate-100 px-3.5 py-2 text-xs font-medium text-slate-600 transition cursor-pointer"
           >
             Cancel
           </button>
@@ -190,7 +229,10 @@ function ContactsSection() {
   return (
     <Card>
       <div className="flex items-center justify-between mb-3">
-        <h2 className="font-bold text-slate-800">👪 Family contacts</h2>
+        <div className="flex items-center gap-2">
+          <Users className="w-4 h-4 text-slate-700" />
+          <h2 className="font-semibold text-slate-900 text-sm">Family Contacts</h2>
+        </div>
         <button
           onClick={() =>
             setEditing({
@@ -198,32 +240,43 @@ function ContactsSection() {
               name: "",
               relation: "",
               phone: "",
-              color: ["#0d9488", "#7c3aed", "#2563eb", "#db2777"][Math.floor(Math.random() * 4)],
+              color: ["#0f172a", "#334155", "#475569", "#2563eb"][Math.floor(Math.random() * 4)],
             })
           }
-          className="rounded-lg bg-teal-600 text-white text-xs font-bold px-3 py-1.5"
+          className="rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold px-3 py-1.5 flex items-center gap-1 transition cursor-pointer"
         >
-          + Add
+          <Plus className="w-3.5 h-3.5" />
+          <span>Add</span>
         </button>
       </div>
       <div className="space-y-2">
         {editing && <Editor c={editing} />}
         {contacts.map((c) => (
-          <div key={c.id} className="flex items-center gap-2 rounded-xl bg-slate-50 px-3 py-2">
+          <div key={c.id} className="flex items-center gap-3 rounded-xl bg-slate-50 border border-slate-100 p-3">
             <span
-              className="h-8 w-8 rounded-full flex items-center justify-center text-white text-sm font-bold"
+              className="h-8 w-8 rounded-xl flex items-center justify-center text-white text-xs font-bold shrink-0"
               style={{ background: c.color }}
             >
               {c.name[0]}
             </span>
-            <div className="flex-1">
-              <p className="text-sm font-semibold text-slate-700">
-                {c.name} {c.isPrimary && "⭐"}
+            <div className="flex-1 min-w-0">
+              <p className="text-xs font-semibold text-slate-900 truncate">
+                {c.name} {c.isPrimary && <span className="text-amber-500 font-normal">· Primary</span>}
               </p>
-              <p className="text-xs text-slate-400">{c.relation} · {c.phone}</p>
+              <p className="text-[11px] text-slate-400 truncate">{c.relation} · {c.phone}</p>
             </div>
-            <button onClick={() => setEditing(c)} className="text-sm px-2">✏️</button>
-            <button onClick={() => deleteContact(c.id)} className="text-sm px-2">🗑️</button>
+            <button 
+              onClick={() => setEditing(c)} 
+              className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-200 transition cursor-pointer"
+            >
+              <Edit3 className="w-3.5 h-3.5" />
+            </button>
+            <button 
+              onClick={() => deleteContact(c.id)} 
+              className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition cursor-pointer"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+            </button>
           </div>
         ))}
       </div>
@@ -239,7 +292,6 @@ function PairingSection() {
   const [manualId, setManualId] = useState(settings.deviceId);
   const scannerRef = useRef<Html5Qrcode | null>(null);
 
-  // Persist the pendant id on the shared pairing record so patient & caregiver stay in sync
   const applyDevice = (id: string) => {
     const code = session?.linkedCode ?? session?.pairCode;
     if (code) setPairingDevice(code, id);
@@ -256,7 +308,7 @@ function PairingSection() {
         { fps: 10, qrbox: 220 },
         (text) => {
           applyDevice(text.trim());
-          setScanMsg(`✅ Paired with ${text.trim()}`);
+          setScanMsg(`Paired successfully with ${text.trim()}`);
           setScanning(false);
         },
         () => {}
@@ -273,46 +325,54 @@ function PairingSection() {
 
   const simulateScan = () => {
     applyDevice("mg-demo-01");
-    setScanMsg("✅ Simulated scan — paired with mg-demo-01");
+    setScanMsg("Simulated scan successful — paired with mg-demo-01");
   };
 
   return (
     <Card>
-      <h2 className="font-bold text-slate-800 mb-1">📿 Pendant pairing</h2>
-      <p className="text-xs text-slate-500 mb-3">
-        Paired device: <Badge tone="blue">{settings.deviceId}</Badge>
+      <div className="flex items-center justify-between mb-1">
+        <div className="flex items-center gap-2">
+          <Radio className="w-4 h-4 text-slate-700" />
+          <h2 className="font-semibold text-slate-900 text-sm">Pendant Device Link</h2>
+        </div>
+        <Badge tone="blue">ID: {settings.deviceId}</Badge>
+      </div>
+      <p className="text-xs text-slate-500 mb-3.5">
+        Scan the QR code printed on the pendant hardware to bind device telemetry.
       </p>
       <div className="flex items-center gap-4">
-        <div className="rounded-xl bg-white border border-slate-200 p-2">
-          <QRCodeSVG value={settings.deviceId} size={96} />
+        <div className="rounded-2xl bg-white border border-slate-200/80 p-2 shrink-0 shadow-sm">
+          <QRCodeSVG value={settings.deviceId} size={88} />
         </div>
         <div className="flex-1 space-y-2">
           <button
             onClick={() => setScanning((s) => !s)}
-            className="w-full rounded-xl bg-slate-800 text-white py-2 text-sm font-bold"
+            className="w-full rounded-xl bg-slate-900 hover:bg-slate-800 text-white py-2 px-3 text-xs font-semibold flex items-center justify-center gap-1.5 transition cursor-pointer"
           >
-            {scanning ? "Stop camera" : "📷 Scan pendant QR"}
+            <Camera className="w-3.5 h-3.5" />
+            <span>{scanning ? "Stop Camera" : "Scan Pendant QR"}</span>
           </button>
           <button
             onClick={simulateScan}
-            className="w-full rounded-xl bg-slate-200 text-slate-700 py-2 text-sm font-bold"
+            className="w-full rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 py-2 px-3 text-xs font-semibold flex items-center justify-center gap-1.5 transition cursor-pointer"
           >
-            🎭 Simulate scan
+            <Sparkles className="w-3.5 h-3.5 text-slate-400" />
+            <span>Simulate Scan</span>
           </button>
         </div>
       </div>
-      {scanning && <div id="qr-reader" className="mt-3 rounded-xl overflow-hidden" />}
-      {scanMsg && <p className="mt-2 text-sm text-slate-600">{scanMsg}</p>}
-      <div className="mt-3 flex gap-2">
+      {scanning && <div id="qr-reader" className="mt-3 rounded-2xl overflow-hidden border border-slate-200" />}
+      {scanMsg && <p className="mt-2.5 text-xs font-medium text-emerald-700">{scanMsg}</p>}
+      <div className="mt-3.5 flex gap-2">
         <input
           value={manualId}
           onChange={(e) => setManualId(e.target.value)}
-          placeholder="Or type pendant id, e.g. mg-demo-01"
-          className="flex-1 rounded-xl border border-slate-300 px-3 py-2 text-sm font-mono"
+          placeholder="Manual Device ID (e.g. mg-demo-01)"
+          className="flex-1 rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-mono font-medium text-slate-800 outline-none focus:border-slate-800 focus:ring-1 focus:ring-slate-800 transition"
         />
         <button
           onClick={() => manualId.trim() && applyDevice(manualId.trim())}
-          className="rounded-xl bg-teal-600 text-white px-4 text-sm font-bold"
+          className="rounded-xl bg-slate-900 hover:bg-slate-800 text-white px-4 text-xs font-semibold transition cursor-pointer"
         >
           Save
         </button>
@@ -327,13 +387,19 @@ function HomeSection() {
   const [h, setH] = useState(settings.home);
   return (
     <Card>
-      <h2 className="font-bold text-slate-800 mb-3">🏠 Home location</h2>
-      <div className="space-y-2">
+      <div className="flex items-center gap-2 mb-1">
+        <Home className="w-4 h-4 text-slate-700" />
+        <h2 className="font-semibold text-slate-900 text-sm">Home Geofence Anchor</h2>
+      </div>
+      <p className="text-xs text-slate-500 mb-3.5">
+        Primary safe-zone reference coordinates used for navigation guidance and route mapping.
+      </p>
+      <div className="space-y-2.5">
         <input
           value={h.label}
           onChange={(e) => setH({ ...h, label: e.target.value })}
-          placeholder="Address label"
-          className="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm"
+          placeholder="Address / Area Label"
+          className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-medium text-slate-800 outline-none focus:border-slate-800 focus:ring-1 focus:ring-slate-800 transition"
         />
         <div className="flex gap-2">
           <input
@@ -341,7 +407,7 @@ function HomeSection() {
             step="0.0001"
             value={h.lat}
             onChange={(e) => setH({ ...h, lat: Number(e.target.value) })}
-            className="flex-1 rounded-xl border border-slate-300 px-3 py-2 text-sm"
+            className="flex-1 rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-mono font-medium text-slate-800 outline-none focus:border-slate-800 transition"
             placeholder="Latitude"
           />
           <input
@@ -349,15 +415,15 @@ function HomeSection() {
             step="0.0001"
             value={h.lon}
             onChange={(e) => setH({ ...h, lon: Number(e.target.value) })}
-            className="flex-1 rounded-xl border border-slate-300 px-3 py-2 text-sm"
+            className="flex-1 rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-mono font-medium text-slate-800 outline-none focus:border-slate-800 transition"
             placeholder="Longitude"
           />
         </div>
         <button
           onClick={() => updateSettings({ home: h })}
-          className="w-full rounded-xl bg-teal-600 text-white py-2 text-sm font-bold"
+          className="w-full rounded-xl bg-slate-900 hover:bg-slate-800 text-white py-2 text-xs font-semibold tracking-tight transition cursor-pointer mt-1"
         >
-          Save home location
+          Save Safe-Zone Coordinates
         </button>
       </div>
     </Card>
@@ -367,8 +433,8 @@ function HomeSection() {
 export default function Manage() {
   return (
     <div className="pb-28 min-h-dvh bg-slate-50">
-      <PageHeader title="Manage" subtitle="Reminders, family, pendant and home" />
-      <div className="px-4 space-y-4 max-w-md mx-auto">
+      <PageHeader title="Care Management" subtitle="Reminders, family circle, pendant pairing, and safe zones" />
+      <div className="px-5 space-y-4 max-w-md mx-auto">
         <LinkPatientCard />
         <RemindersSection />
         <ContactsSection />

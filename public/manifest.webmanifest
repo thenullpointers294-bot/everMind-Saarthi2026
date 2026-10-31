@@ -1,13 +1,13 @@
 {
-  "name": "Memory Guardian",
-  "short_name": "MemGuardian",
+  "name": "EverMind",
+  "short_name": "EverMind",
   "description": "Remember. Stay Safe. Stay Connected. A supportive safety and routine companion — not a medical device.",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
   "orientation": "portrait",
-  "background_color": "#0d9488",
-  "theme_color": "#0d9488",
+  "background_color": "#0f172a",
+  "theme_color": "#0f172a",
   "icons": [
     {
       "src": "./icons/icon-512.png",

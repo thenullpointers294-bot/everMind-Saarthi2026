@@ -1,7 +1,16 @@
 import { useState } from "react";
+import { 
+  AlertOctagon, 
+  Navigation, 
+  MapPin, 
+  Clock, 
+  Phone, 
+  CheckCircle2, 
+  HeartHandshake 
+} from "lucide-react";
 import { useApp } from "../../context/AppContext";
 import { simulator } from "../../services/deviceService";
-import { nextReminder, formatTime12, REMINDER_ICONS } from "../../utils/reminderUtils";
+import { nextReminder, formatTime12 } from "../../utils/reminderUtils";
 import { DemoBadge } from "../../components/ui";
 
 export default function WearerHome() {
@@ -31,111 +40,124 @@ export default function WearerHome() {
   };
 
   return (
-    <div className="pb-28 bg-gradient-to-b from-teal-50 to-slate-50 min-h-dvh">
-      {/* Greeting header */}
-      <div className="bg-gradient-to-br from-teal-600 to-emerald-500 text-white px-5 pt-8 pb-10 rounded-b-[2rem] shadow-lg">
-        <div className="flex items-center justify-between">
-          <p className="text-teal-100 font-medium">{greeting} 🌤️</p>
+    <div className="pb-28 bg-slate-50 min-h-dvh">
+      {/* Aesthetic Top Greeting Header */}
+      <div className="bg-white border-b border-slate-200/80 px-6 pt-10 pb-7 shadow-[0_1px_3px_rgba(0,0,0,0.02)]">
+        <div className="flex items-center justify-between text-xs font-semibold text-slate-500 uppercase tracking-wider">
+          <span>{greeting}</span>
           <DemoBadge />
         </div>
-        <h1 className="text-3xl font-extrabold mt-1">{settings.wearerName}</h1>
-        <div className="mt-4 flex items-end justify-between">
-          <div>
-            <p className="text-lg font-semibold">{dateStr}</p>
-            <p className="text-teal-100 text-sm">It is {timeStr} now</p>
-          </div>
-          <div className="text-5xl">🕐</div>
+        <h1 className="text-2xl font-bold tracking-tight text-slate-900 mt-1">
+          {settings.wearerName}
+        </h1>
+        <div className="mt-3 flex items-center justify-between text-slate-500 text-sm">
+          <span>{dateStr}</span>
+          <span className="font-semibold text-slate-900 font-mono bg-slate-100 px-2.5 py-1 rounded-lg">
+            {timeStr}
+          </span>
         </div>
       </div>
 
-      <div className="px-4 -mt-6 space-y-4 max-w-md mx-auto">
+      <div className="px-5 mt-5 space-y-4 max-w-md mx-auto">
         {/* Orientation card */}
-        <div className="rounded-2xl bg-white shadow-md border border-teal-100 p-4">
-          <p className="text-xs font-bold uppercase tracking-wide text-teal-600">
-            Where am I?
-          </p>
-          <p className="mt-1 text-lg font-semibold text-slate-800 leading-snug">
-            Today is {dateStr}. You are at{" "}
-            <span className="text-teal-700">{settings.home.label.split("—")[0].trim().toLowerCase()}</span>. 🏠
-          </p>
-          <p className="text-sm text-slate-500 mt-1">{settings.home.label}</p>
+        <div className="rounded-2xl bg-white border border-slate-200/80 p-4 shadow-[0_1px_3px_rgba(15,23,42,0.03)] flex items-start gap-3.5">
+          <div className="p-2.5 rounded-xl bg-slate-100 text-slate-700 shrink-0">
+            <MapPin className="w-5 h-5 stroke-[2]" />
+          </div>
+          <div>
+            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
+              Current Location
+            </span>
+            <p className="font-semibold text-slate-900 text-base leading-snug mt-0.5">
+              You are safe at home.
+            </p>
+            <p className="text-xs text-slate-500 mt-0.5">{settings.home.label}</p>
+          </div>
         </div>
 
         {/* Next reminder */}
         {next && (
-          <div className="rounded-2xl bg-amber-50 border border-amber-200 p-4 flex items-center gap-3">
-            <div className="text-3xl">{REMINDER_ICONS[next.type]}</div>
-            <div>
-              <p className="text-xs font-bold uppercase tracking-wide text-amber-700">
-                Next reminder
-              </p>
-              <p className="font-semibold text-slate-800">{next.title}</p>
-              <p className="text-sm text-amber-700 font-medium">at {formatTime12(next.time)}</p>
+          <div className="rounded-2xl bg-white border border-amber-200/80 p-4 shadow-sm flex items-center gap-3.5">
+            <div className="p-2.5 rounded-xl bg-amber-50 text-amber-700 shrink-0">
+              <Clock className="w-5 h-5 stroke-[2]" />
+            </div>
+            <div className="flex-1">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-amber-700">
+                Upcoming Reminder
+              </span>
+              <p className="font-semibold text-slate-900 text-sm mt-0.5">{next.title}</p>
+              <p className="text-xs text-slate-500 font-medium">Scheduled at {formatTime12(next.time)}</p>
             </div>
           </div>
         )}
 
         {/* Confirmation toast */}
         {sent && (
-          <div className="rounded-2xl bg-emerald-600 text-white p-4 text-center font-semibold shadow-lg">
-            {sent === "sos"
-              ? "✅ Help message sent. Your family has been told."
-              : "✅ Your family can now see where you are and guide you home."}
+          <div className="rounded-2xl bg-emerald-700 text-white p-4 text-center font-medium shadow-md flex items-center justify-center gap-2 animate-fade-in">
+            <CheckCircle2 className="w-5 h-5" />
+            <span>
+              {sent === "sos"
+                ? "Help alert sent. Caregivers have been notified."
+                : "Caregiver has received your location and can guide you home."}
+            </span>
           </div>
         )}
 
-        {/* SOS */}
+        {/* High-visibility tactile SOS button */}
         <button
           onClick={sendSOS}
-          className="w-full rounded-3xl bg-gradient-to-b from-rose-500 to-rose-600 text-white py-8 shadow-xl shadow-rose-200 active:scale-[0.97] transition-transform"
+          className="w-full rounded-2xl bg-rose-600 hover:bg-rose-700 text-white py-6 px-5 shadow-[0_4px_16px_rgba(225,29,72,0.25)] active:scale-[0.98] transition-all cursor-pointer flex flex-col items-center justify-center gap-1.5"
         >
-          <div className="text-4xl">🆘</div>
-          <div className="text-2xl font-extrabold mt-1">I need help</div>
-          <div className="text-rose-100 text-sm font-medium">Press here and family will be told</div>
+          <AlertOctagon className="w-10 h-10 animate-pulse stroke-[2]" />
+          <span className="text-xl font-bold tracking-tight">I Need Help</span>
+          <span className="text-rose-100 text-xs font-normal">
+            Press to alert your family immediately
+          </span>
         </button>
 
         {/* Take me home */}
         <button
           onClick={sendHome}
-          className="w-full rounded-3xl bg-gradient-to-b from-sky-500 to-blue-600 text-white py-6 shadow-lg shadow-sky-200 active:scale-[0.97] transition-transform"
+          className="w-full rounded-2xl bg-slate-900 hover:bg-slate-800 text-white py-4 px-5 shadow-sm active:scale-[0.98] transition-all cursor-pointer flex items-center justify-center gap-3"
         >
-          <div className="text-3xl">🏠</div>
-          <div className="text-xl font-extrabold mt-1">Take me home</div>
-          <div className="text-sky-100 text-sm font-medium">Family will see your location and help</div>
+          <Navigation className="w-5 h-5 text-slate-300" />
+          <span className="text-sm font-semibold tracking-tight">Take Me Home</span>
         </button>
 
-        {/* Call family */}
-        <div>
-          <p className="px-1 text-sm font-bold text-slate-600 mb-2">Call family with one tap</p>
-          <div className="grid grid-cols-1 gap-2.5">
+        {/* Call family section */}
+        <div className="pt-2">
+          <p className="px-1 text-xs font-bold uppercase tracking-wider text-slate-500 mb-2.5">
+            Quick Family Contacts
+          </p>
+          <div className="space-y-2">
             {contacts.slice(0, 3).map((c) => (
               <a
                 key={c.id}
                 href={`tel:${c.phone.replace(/\s/g, "")}`}
-                className="flex items-center gap-3 rounded-2xl bg-white border border-slate-200 p-3.5 shadow-sm active:scale-[0.98] transition-transform"
+                className="flex items-center gap-3.5 rounded-2xl bg-white border border-slate-200/80 p-3.5 shadow-sm active:scale-[0.99] transition-all hover:border-slate-300"
               >
                 <span
-                  className="h-12 w-12 rounded-full flex items-center justify-center text-white text-lg font-bold shrink-0"
+                  className="h-10 w-10 rounded-full flex items-center justify-center text-white text-sm font-bold shrink-0"
                   style={{ background: c.color }}
                 >
                   {c.name[0]}
                 </span>
                 <span className="flex-1">
-                  <span className="block font-bold text-slate-800 text-lg">
-                    {c.name} {c.id === primary?.id && "⭐"}
+                  <span className="block font-semibold text-slate-900 text-sm">
+                    {c.name} {c.id === primary?.id && "· Primary"}
                   </span>
-                  <span className="block text-sm text-slate-500">{c.relation}</span>
+                  <span className="block text-xs text-slate-500">{c.relation}</span>
                 </span>
-                <span className="h-11 w-11 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center text-xl">
-                  📞
+                <span className="h-9 w-9 rounded-xl bg-slate-100 text-slate-700 flex items-center justify-center">
+                  <Phone className="w-4 h-4" />
                 </span>
               </a>
             ))}
           </div>
         </div>
 
-        <p className="text-center text-[11px] text-slate-400 pb-2 leading-relaxed">
-          Memory Guardian is a supportive companion, not a medical device.
+        <p className="text-center text-[11px] text-slate-400 pt-3 pb-2 leading-relaxed">
+          EverMind is a supportive routine companion, not a medical device.
         </p>
       </div>
     </div>

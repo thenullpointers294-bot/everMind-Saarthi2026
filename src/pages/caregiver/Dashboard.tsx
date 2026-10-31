@@ -1,5 +1,6 @@
 import { useMemo } from "react";
 import { Link } from "react-router-dom";
+import { Radio, Navigation, AlertTriangle, ArrowRight, CheckCircle } from "lucide-react";
 import { useApp } from "../../context/AppContext";
 import { deriveStatus, timeAgo } from "../../services/deviceService";
 import MapView, { type MapMarker } from "../../components/MapView";
@@ -29,7 +30,7 @@ export default function Dashboard() {
         lat: loc.lat,
         lon: loc.lon,
         kind: homeReq ? "alert" : "wearer",
-        label: `${settings.wearerName} — latest available location (${timeAgo(loc.createdAt)})`,
+        label: `${settings.wearerName} — latest location (${timeAgo(loc.createdAt)})`,
       });
     }
     m.push({
@@ -48,63 +49,67 @@ export default function Dashboard() {
         title="Dashboard"
         subtitle={
           session?.linkedCode
-            ? `Watching over ${settings.wearerName}`
-            : "Connect to a patient to get started"
+            ? `Active oversight for ${settings.wearerName}`
+            : "Connect to a wearer to view live telemetry"
         }
         right={
           settings.developerMode ? (
             <Link
               to="/dev/simulator"
-              className="rounded-xl bg-slate-900 text-white text-xs font-bold px-3 py-2"
+              className="rounded-xl bg-slate-900 text-white text-xs font-semibold px-3 py-1.5 shadow-sm hover:bg-slate-800 transition"
             >
-              🛠 Simulator
+              Simulator
             </Link>
           ) : undefined
         }
       />
-      <div className="px-4 space-y-4 max-w-md mx-auto">
+      <div className="px-5 space-y-4 max-w-md mx-auto">
         {!session?.linkedCode && <LinkPatientCard />}
 
         {/* Device status */}
         <Card>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="h-11 w-11 rounded-2xl bg-teal-100 flex items-center justify-center text-xl">
-                📿
+              <div className="h-10 w-10 rounded-xl bg-slate-100 flex items-center justify-center text-slate-700">
+                <Radio className="w-5 h-5 stroke-[1.75]" />
               </div>
               <div>
-                <p className="font-bold text-slate-800">Pendant {settings.deviceId}</p>
+                <p className="font-semibold text-slate-900 text-sm">Pendant {settings.deviceId}</p>
                 <p className="text-xs text-slate-500">
-                  Last event: {timeAgo(status?.lastSeen ?? null)}
+                  Last seen: {timeAgo(status?.lastSeen ?? null)}
                 </p>
               </div>
             </div>
             {status?.online ? (
-              <Badge tone="green">● Online</Badge>
+              <Badge tone="green">Online</Badge>
             ) : (
-              <Badge tone="slate">○ Offline / last seen {timeAgo(status?.lastSeen ?? null)}</Badge>
+              <Badge tone="slate">Offline</Badge>
             )}
           </div>
           {status?.lastOk && Date.now() - status.lastOk.createdAt < 60 * 60 * 1000 && (
-            <div className="mt-3 rounded-xl bg-emerald-50 border border-emerald-200 px-3 py-2 text-sm font-semibold text-emerald-700">
-              ✅ Wearer pressed "I'm OK" {timeAgo(status.lastOk.createdAt)}
+            <div className="mt-3.5 rounded-xl bg-emerald-50 border border-emerald-200/80 px-3 py-2 text-xs font-medium text-emerald-800 flex items-center gap-2">
+              <CheckCircle className="w-4 h-4 text-emerald-600" />
+              <span>Wearer confirmed safe ("I'm OK") {timeAgo(status.lastOk.createdAt)}</span>
             </div>
           )}
         </Card>
 
         {/* Take me home request */}
         {homeReq && (
-          <div className="rounded-2xl bg-sky-600 text-white p-4 shadow-lg">
-            <p className="font-bold text-lg">🏠 "Take me home" request</p>
-            <p className="text-sky-100 text-sm">
-              {settings.wearerName} asked to go home {timeAgo(homeReq.createdAt)}. The route to home
-              is shown on the map below.
+          <div className="rounded-2xl bg-slate-900 text-white p-4.5 shadow-sm border border-slate-800">
+            <div className="flex items-center gap-2 text-indigo-400 font-semibold text-sm">
+              <Navigation className="w-4 h-4" />
+              <span>"Take me home" requested</span>
+            </div>
+            <p className="text-slate-300 text-xs mt-1 leading-relaxed">
+              {settings.wearerName} requested navigation assistance {timeAgo(homeReq.createdAt)}. The suggested route is plotted on the map.
             </p>
             <Link
               to="/caregiver/alerts"
-              className="mt-2 inline-block rounded-lg bg-white/20 px-3 py-1.5 text-sm font-bold"
+              className="mt-3 inline-flex items-center gap-1.5 rounded-xl bg-white/10 hover:bg-white/20 px-3 py-1.5 text-xs font-semibold text-white transition"
             >
-              Manage request →
+              <span>Manage Request</span>
+              <ArrowRight className="w-3.5 h-3.5" />
             </Link>
           </div>
         )}
@@ -113,38 +118,41 @@ export default function Dashboard() {
         {openAlerts.length > 0 && (
           <Link
             to="/caregiver/alerts"
-            className="block rounded-2xl bg-rose-600 text-white p-4 shadow-lg"
+            className="flex items-center justify-between rounded-2xl bg-rose-600 hover:bg-rose-700 text-white p-4 shadow-sm transition active:scale-[0.99]"
           >
-            <p className="font-bold text-lg">
-              🚨 {openAlerts.length} open alert{openAlerts.length > 1 ? "s" : ""}
-            </p>
-            <p className="text-rose-100 text-sm">Tap to review and respond.</p>
+            <div className="flex items-center gap-3">
+              <AlertTriangle className="w-5 h-5 text-white" />
+              <div>
+                <p className="font-semibold text-sm">
+                  {openAlerts.length} unresolved safety alert{openAlerts.length > 1 ? "s" : ""}
+                </p>
+                <p className="text-rose-100 text-xs">Tap to review telemetry and take action</p>
+              </div>
+            </div>
+            <ArrowRight className="w-4 h-4 text-rose-200" />
           </Link>
         )}
 
         {/* Map */}
         <Card className="p-3">
-          <div className="flex items-center justify-between mb-2 px-1">
-            <p className="font-bold text-slate-800 text-sm">Latest available location</p>
+          <div className="flex items-center justify-between mb-2.5 px-1 pt-1">
+            <p className="font-semibold text-slate-900 text-xs tracking-wide uppercase">Live Location</p>
             <FreshnessBadge freshness={status?.freshness ?? "none"} />
           </div>
           <MapView markers={markers} routeToHome={Boolean(homeReq)} height={300} />
           {loc ? (
-            <p className="mt-2 px-1 text-xs text-slate-500">
-              {loc.lat?.toFixed(5)}, {loc.lon?.toFixed(5)} · fix age{" "}
-              {loc.fixAgeMs != null ? `${(loc.fixAgeMs / 1000).toFixed(1)}s` : "—"} · received{" "}
-              {timeAgo(loc.createdAt)}
+            <p className="mt-2.5 px-1 text-[11px] text-slate-500 font-mono">
+              {loc.lat?.toFixed(5)}, {loc.lon?.toFixed(5)} · fix {loc.fixAgeMs != null ? `${(loc.fixAgeMs / 1000).toFixed(1)}s` : "—"} · received {timeAgo(loc.createdAt)}
             </p>
           ) : (
-            <p className="mt-2 px-1 text-xs text-slate-500">
-              No GPS fix received yet. The home location is shown.
+            <p className="mt-2.5 px-1 text-[11px] text-slate-500">
+              No live GPS fix reported yet. Home coordinates shown.
             </p>
           )}
         </Card>
 
-        <p className="text-center text-[11px] text-slate-400 leading-relaxed">
-          Location shown is the latest the pendant reported — it may not be the current position.
-          Memory Guardian is not a medical or emergency-response device.
+        <p className="text-center text-[11px] text-slate-400 leading-relaxed pt-1">
+          Location displayed is the latest transmitted by the pendant. EverMind is a supportive routine companion, not a medical or emergency-response service.
         </p>
       </div>
     </div>
