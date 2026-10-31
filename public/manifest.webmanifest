@@ -1,0 +1,19 @@
+{
+  "name": "Memory Guardian",
+  "short_name": "MemGuardian",
+  "description": "Remember. Stay Safe. Stay Connected. A supportive safety and routine companion — not a medical device.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0d9488",
+  "theme_color": "#0d9488",
+  "icons": [
+    {
+      "src": "./icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
