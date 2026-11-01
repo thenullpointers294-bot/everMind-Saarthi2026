@@ -43,22 +43,46 @@ interface StoredAccount {
   hash: string;
 }
 
-// ---------------- crypto helpers ----------------
-async function sha256(text: string): Promise<string> {
-  const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(text));
-  return Array.from(new Uint8Array(buf))
-    .map((b) => b.toString(16).padStart(2, "0"))
-    .join("");
+import { sha256 as jsSha256 } from "js-sha256";
+
+// ---------------- crypto helpers (Universal for HTTPS, Localhost, & Mobile LAN HTTP) ----------------
+function getRandomBytes(len: number): Uint8Array {
+  const bytes = new Uint8Array(len);
+  if (typeof crypto !== "undefined" && typeof crypto.getRandomValues === "function") {
+    crypto.getRandomValues(bytes);
+  } else {
+    for (let i = 0; i < len; i++) {
+      bytes[i] = Math.floor(Math.random() * 256);
+    }
+  }
+  return bytes;
 }
+
+async function sha256(text: string): Promise<string> {
+  // Use native Web Crypto if available in Secure Contexts (HTTPS/localhost)
+  if (typeof crypto !== "undefined" && crypto.subtle && typeof crypto.subtle.digest === "function") {
+    try {
+      const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(text));
+      return Array.from(new Uint8Array(buf))
+        .map((b) => b.toString(16).padStart(2, "0"))
+        .join("");
+    } catch {
+      // Fallback to pure JS below
+    }
+  }
+  // Pure JavaScript SHA-256 fallback for Mobile HTTP (IP addresses)
+  return jsSha256(text);
+}
+
 const randomId = (len = 16) =>
-  Array.from(crypto.getRandomValues(new Uint8Array(len)))
+  Array.from(getRandomBytes(len))
     .map((b) => b.toString(36).padStart(2, "0"))
     .join("")
     .slice(0, len);
 
 export function generatePairCode(): string {
   const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; // no 0/O/1/I
-  const bytes = crypto.getRandomValues(new Uint8Array(6));
+  const bytes = getRandomBytes(6);
   return "MG-" + Array.from(bytes).map((b) => alphabet[b % alphabet.length]).join("");
 }
 
@@ -105,7 +129,29 @@ export function getSession(): UserProfile | null {
 }
 export function subscribeSession(cb: (p: UserProfile | null) => void): () => void {
   cb(getSession());
-  return subscribeKey(SESSION_KEY, () => cb(getSession()));
+  const unsubLocal = subscribeKey(SESSION_KEY, () => cb(getSession()));
+
+  let unsubRemote = () => {};
+  const current = getSession();
+  if (current?.uid && backend === "rtdb" && rtdb) {
+    unsubRemote = onValue(ref(rtdb, `users/${current.uid}`), (snap) => {
+      const val = snap.val() as UserProfile | null;
+      if (val) {
+        const local = getSession();
+        const merged: UserProfile = { ...(local ?? {}), ...val };
+        if (JSON.stringify(merged) !== JSON.stringify(local)) {
+          writeKey(SESSION_KEY, merged);
+          applyProfileToSettings(merged);
+          cb(merged);
+        }
+      }
+    });
+  }
+
+  return () => {
+    unsubLocal();
+    unsubRemote();
+  };
 }
 function setSession(p: UserProfile | null) {
   writeKey(SESSION_KEY, p);
@@ -118,13 +164,14 @@ async function applyProfileToSettings(p: UserProfile) {
     saveSettings({
       role: "wearer",
       wearerName: p.name,
-      deviceId: pairing?.deviceId ?? "mg-demo-01",
+      deviceId: pairing?.deviceId || "mg-demo-01",
     });
   } else {
     const pairing = p.linkedCode ? await dbGet<Pairing>(`pairings/${p.linkedCode}`) : null;
     saveSettings({
       role: "caregiver",
-      ...(pairing ? { wearerName: pairing.patientName, deviceId: pairing.deviceId } : {}),
+      wearerName: pairing?.patientName || "Wearer",
+      deviceId: pairing?.deviceId || "mg-demo-01",
     });
   }
 }
@@ -224,8 +271,9 @@ export async function lookupPairing(code: string): Promise<Pairing | null> {
 }
 
 export function normaliseCode(code: string): string {
-  const c = code.trim().toUpperCase().replace(/\s/g, "");
-  return c.startsWith("MG-") ? c : "MG-" + c.replace(/^MG/, "");
+  const c = code.trim().toUpperCase().replace(/[\s-]/g, "");
+  const raw = c.replace(/^(MG|EM)/, "");
+  return "MG-" + raw;
 }
 
 /** Caregiver joins a patient by entering their code. */

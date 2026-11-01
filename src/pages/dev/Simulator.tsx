@@ -7,10 +7,12 @@ import {
   AlertTriangle, 
   CheckCircle2, 
   Footprints,
-  Code2
+  Code2,
+  Crosshair
 } from "lucide-react";
 import { useApp } from "../../context/AppContext";
 import { simulator, timeAgo } from "../../services/deviceService";
+import { broadcastDeviceLocation } from "../../services/geoService";
 import { Card, PageHeader, Badge } from "../../components/ui";
 import { isDemo } from "../../services/dataService";
 
@@ -21,7 +23,7 @@ const ACTIONS: {
   desc: string;
   cls: string;
 }[] = [
-  { key: "sendLocation", icon: <MapPin className="w-4 h-4 text-slate-300" />, label: "Send Location", desc: 'type:"location", sim position', cls: "bg-slate-900 hover:bg-slate-800" },
+  { key: "sendLocation", icon: <MapPin className="w-4 h-4 text-slate-300" />, label: "Send Sim Location", desc: 'type:"location", sim position', cls: "bg-slate-900 hover:bg-slate-800" },
   { key: "moveLocation", icon: <Footprints className="w-4 h-4 text-slate-300" />, label: "Simulate Walk", desc: "Random walk near Dehradun", cls: "bg-slate-900 hover:bg-slate-800" },
   { key: "pressSOS", icon: <AlertOctagon className="w-4 h-4 text-rose-200" />, label: "Trigger SOS", desc: 'type:"sos" — creates New alert', cls: "bg-rose-600 hover:bg-rose-700" },
   { key: "triggerFall", icon: <AlertTriangle className="w-4 h-4 text-amber-200" />, label: "Trigger Fall", desc: 'type:"possible_fall", experimental', cls: "bg-amber-600 hover:bg-amber-700" },
@@ -32,10 +34,23 @@ const ACTIONS: {
 export default function Simulator() {
   const { settings, device } = useApp();
   const [log, setLog] = useState<string[]>([]);
+  const [locating, setLocating] = useState(false);
 
   const run = async (key: keyof typeof simulator, label: string) => {
     await simulator[key](settings.deviceId);
     setLog((l) => [`${new Date().toLocaleTimeString()} — ${label}`, ...l].slice(0, 8));
+  };
+
+  const broadcastLiveGPS = async () => {
+    setLocating(true);
+    try {
+      const coords = await broadcastDeviceLocation(settings.deviceId, "location");
+      setLog((l) => [`${new Date().toLocaleTimeString()} — 📍 Real GPS: ${coords.lat}, ${coords.lon} (±${coords.accuracy ?? 0}m)`, ...l].slice(0, 8));
+    } catch (err) {
+      setLog((l) => [`${new Date().toLocaleTimeString()} — ⚠️ Location error: ${err instanceof Error ? err.message : "Denied"}`, ...l].slice(0, 8));
+    } finally {
+      setLocating(false);
+    }
   };
 
   return (
@@ -61,6 +76,26 @@ export default function Simulator() {
             </Badge>
           </div>
         </Card>
+
+        {/* Real Device Location Trigger */}
+        <button
+          onClick={broadcastLiveGPS}
+          disabled={locating}
+          className="w-full rounded-2xl bg-gradient-to-r from-sky-600 to-indigo-600 hover:from-sky-700 hover:to-indigo-700 text-white p-3.5 shadow-sm active:scale-[0.98] transition-all cursor-pointer flex items-center justify-between gap-3 disabled:opacity-50"
+        >
+          <div className="flex items-center gap-2.5">
+            <div className="p-2 bg-white/20 rounded-xl">
+              <Crosshair className={`w-4 h-4 ${locating ? "animate-spin" : ""}`} />
+            </div>
+            <div className="text-left">
+              <p className="font-bold text-xs">Use Real Device GPS (Phone / Laptop)</p>
+              <p className="text-[10px] text-white/80">Broadcast your exact current location to Firebase</p>
+            </div>
+          </div>
+          <span className="text-[11px] font-semibold bg-white/20 px-2.5 py-1 rounded-lg">
+            {locating ? "Locating..." : "Sync GPS"}
+          </span>
+        </button>
 
         <div className="grid grid-cols-2 gap-2.5">
           {ACTIONS.map((a) => (

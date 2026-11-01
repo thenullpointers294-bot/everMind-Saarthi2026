@@ -19,13 +19,61 @@ const ONLINE_WINDOW_MS = 2 * 60 * 1000;
 const RECENT_MS = 60 * 1000;
 const UPDATED_MS = 10 * 60 * 1000;
 
+export function calculateDistanceMeters(
+  lat1: number,
+  lon1: number,
+  lat2: number,
+  lon2: number
+): number {
+  const R = 6371000; // meters
+  const dLat = ((lat2 - lat1) * Math.PI) / 180;
+  const dLon = ((lon2 - lon1) * Math.PI) / 180;
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos((lat1 * Math.PI) / 180) *
+      Math.cos((lat2 * Math.PI) / 180) *
+      Math.sin(dLon / 2) *
+      Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return Math.round(R * c);
+}
+
+const isPlaceholder = (lat: number, lon: number) =>
+  Math.abs(lat - 30.3165) < 0.0001 && Math.abs(lon - 78.0322) < 0.0001;
+
 export function deriveStatus(events: DeviceEvent[], now = Date.now()): DeviceStatus {
   const lastSeen = events.length ? events[0].createdAt : null;
+  // Prioritize verified GPS fixes first, then real non-placeholder coordinates, then any coordinates
   const lastLocation =
-    events.find((e) => e.hasFix && e.lat != null && e.lon != null) ?? null;
-  const lastLocEvent = events.find((e) => e.type === "location") ?? null;
+    events.find(
+      (e) =>
+        Boolean(e.hasFix) &&
+        e.lat != null &&
+        e.lon != null &&
+        Number.isFinite(e.lat) &&
+        Number.isFinite(e.lon) &&
+        (e.lat !== 0 || e.lon !== 0)
+    ) ??
+    events.find(
+      (e) =>
+        e.lat != null &&
+        e.lon != null &&
+        Number.isFinite(e.lat) &&
+        Number.isFinite(e.lon) &&
+        (e.lat !== 0 || e.lon !== 0) &&
+        !isPlaceholder(e.lat, e.lon)
+    ) ??
+    events.find(
+      (e) =>
+        e.lat != null &&
+        e.lon != null &&
+        Number.isFinite(e.lat) &&
+        Number.isFinite(e.lon) &&
+        (e.lat !== 0 || e.lon !== 0)
+    ) ??
+    null;
   const online =
-    lastLocEvent != null && now - lastLocEvent.createdAt < ONLINE_WINDOW_MS;
+    lastSeen != null && now - lastSeen < ONLINE_WINDOW_MS;
 
   let freshness: DeviceStatus["freshness"] = "none";
   if (lastLocation) {

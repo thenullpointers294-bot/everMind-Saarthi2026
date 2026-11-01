@@ -78,7 +78,7 @@ export default function History() {
                         {e.lat.toFixed(5)}, {e.lon!.toFixed(5)}
                       </span>
                     ) : (
-                      <span className="text-slate-400">no GPS fix</span>
+                      <span className="text-slate-400">Recorded</span>
                     )}
                   </p>
                 </div>

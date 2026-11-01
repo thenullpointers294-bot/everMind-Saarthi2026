@@ -44,6 +44,20 @@ export interface Reminder {
   doneToday?: string; // ISO date when last marked done
 }
 
+export type GameType = "matching_pairs" | "day_quiz";
+
+export interface GameSession {
+  id: string;
+  gameType: GameType;
+  gameTitle: string;
+  score: number; // 0 - 100
+  moves?: number;
+  durationSeconds: number;
+  correct?: boolean;
+  latencyMs?: number;
+  completedAt: number; // ms epoch
+}
+
 export interface Contact {
   id: string;
   name: string;

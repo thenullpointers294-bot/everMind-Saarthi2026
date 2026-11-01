@@ -6,13 +6,15 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import type { AppSettings, Contact, Reminder } from "../types";
+import type { AppSettings, Contact, GameSession, Reminder } from "../types";
+import { initNotifications, notifyDeviceAlert } from "../services/notificationService";
 import {
   getSettings,
   saveSettings,
   subscribeSettings,
   subscribeReminders,
   subscribeContacts,
+  subscribeGameSessions,
   setScope,
   onScopeChange,
 } from "../services/dataService";
@@ -34,6 +36,7 @@ interface AppCtx {
   device: DeviceSnapshot | null;
   reminders: Reminder[];
   contacts: Contact[];
+  games: GameSession[];
   now: Date;
 }
 
@@ -45,6 +48,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [device, setDevice] = useState<DeviceSnapshot | null>(null);
   const [reminders, setReminders] = useState<Reminder[]>([]);
   const [contacts, setContacts] = useState<Contact[]>([]);
+  const [games, setGames] = useState<GameSession[]>([]);
   const [now, setNow] = useState(new Date());
   const [scopeTick, setScopeTick] = useState(0);
 
@@ -73,10 +77,40 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => subscribeReminders(setReminders), [scopeTick]);
   useEffect(() => subscribeContacts(setContacts), [scopeTick]);
+  useEffect(() => subscribeGameSessions(setGames), [scopeTick]);
   useEffect(
     () => subscribeDevice(settings.deviceId, setDevice),
     [settings.deviceId, scopeTick]
   );
+  // Request notification permissions and register high-priority channel
+  useEffect(() => {
+    initNotifications();
+  }, []);
+
+  // Dispatch native notification to caregiver when fall or SOS arrives
+  useEffect(() => {
+    if (!device || session?.role !== "caregiver") return;
+
+    // 1. Notify on open/unresolved alerts
+    if (device.alerts) {
+      for (const alert of device.alerts) {
+        if (alert.state.status !== "resolved" && !alert.cancelledByOk) {
+          notifyDeviceAlert(alert.event, settings.wearerName);
+        }
+      }
+    }
+
+    // 2. Also check recent events (last 5 minutes)
+    if (device.events) {
+      const cutoff = Date.now() - 300_000;
+      for (const evt of device.events) {
+        if (evt.createdAt >= cutoff && (evt.type === "sos" || evt.type === "possible_fall" || evt.type === "ok")) {
+          notifyDeviceAlert(evt, settings.wearerName);
+        }
+      }
+    }
+  }, [device?.alerts, device?.events, session?.role, settings.wearerName]);
+
   useEffect(() => {
     const t = setInterval(() => setNow(new Date()), 15_000);
     return () => clearInterval(t);
@@ -90,9 +124,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
       device,
       reminders,
       contacts,
+      games,
       now,
     }),
-    [settings, session, device, reminders, contacts, now]
+    [settings, session, device, reminders, contacts, games, now]
   );
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;

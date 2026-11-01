@@ -18,11 +18,12 @@ const ICONS: Record<MapMarker["kind"], { label: string; bg: string; dot: string;
 function divIcon(kind: MapMarker["kind"]) {
   const { bg, dot } = ICONS[kind];
   const isAlert = kind === "alert";
+  const isWearer = kind === "wearer";
   return L.divIcon({
     className: "",
     html: `
       <div style="position:relative;display:flex;align-items:center;justify-content:center;width:34px;height:34px;">
-        ${isAlert ? `<div style="position:absolute;inset:-6px;border-radius:9999px;background:#e11d48;opacity:0.3;animation:ping 1.5s cubic-bezier(0,0,0.2,1) infinite;"></div>` : ''}
+        ${isAlert ? `<div style="position:absolute;inset:-6px;border-radius:9999px;background:#e11d48;opacity:0.35;animation:ping 1.5s cubic-bezier(0,0,0.2,1) infinite;"></div>` : isWearer ? `<div style="position:absolute;inset:-4px;border-radius:9999px;background:#38bdf8;opacity:0.3;animation:ping 2.5s cubic-bezier(0,0,0.2,1) infinite;"></div>` : ''}
         <div style="width:30px;height:30px;border-radius:9999px;background:${bg};border:2.5px solid #ffffff;box-shadow:0 3px 8px rgba(15,23,42,0.25);display:flex;align-items:center;justify-content:center;">
           <div style="width:9px;height:9px;border-radius:9999px;background:${dot};"></div>
         </div>
@@ -71,6 +72,19 @@ export default function MapView({
     if (!map || !layer) return;
     layer.clearLayers();
 
+    // Render Home Safe-Zone radius perimeter circle
+    const home = markers.find((m) => m.kind === "home");
+    if (home) {
+      L.circle([home.lat, home.lon], {
+        radius: 250,
+        color: "#2563eb",
+        weight: 1.5,
+        dashArray: "5 5",
+        fillColor: "#3b82f6",
+        fillOpacity: 0.08,
+      }).addTo(layer);
+    }
+
     markers.forEach((m) => {
       L.marker([m.lat, m.lon], { icon: divIcon(m.kind) })
         .bindPopup(m.label)
@@ -79,7 +93,6 @@ export default function MapView({
 
     if (routeToHome) {
       const wearer = markers.find((m) => m.kind === "wearer" || m.kind === "alert");
-      const home = markers.find((m) => m.kind === "home");
       if (wearer && home) {
         L.polyline(
           [
@@ -94,10 +107,12 @@ export default function MapView({
     if (markers.length === 1) {
       map.setView([markers[0].lat, markers[0].lon], 16);
     } else if (markers.length > 1) {
-      map.fitBounds(
-        L.latLngBounds(markers.map((m) => [m.lat, m.lon] as [number, number])),
-        { padding: [40, 40], maxZoom: 16 }
-      );
+      const bounds = L.latLngBounds(markers.map((m) => [m.lat, m.lon] as [number, number]));
+      if (bounds.getNorthEast().equals(bounds.getSouthWest())) {
+        map.setView(bounds.getCenter(), 16);
+      } else {
+        map.fitBounds(bounds, { padding: [45, 45], maxZoom: 16 });
+      }
     }
   }, [markers, routeToHome]);
 

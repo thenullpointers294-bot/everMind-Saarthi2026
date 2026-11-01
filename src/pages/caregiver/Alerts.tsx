@@ -79,7 +79,7 @@ function AlertCard({ alert }: { alert: Alert }) {
           ) : (
             <p className="text-xs text-slate-400 mt-1 flex items-center gap-1">
               <MapPin className="w-3.5 h-3.5 text-slate-300 shrink-0" />
-              <span>No GPS fix available at alert trigger</span>
+              <span>Location unavailable at trigger</span>
             </p>
           )}
           {event.experimental && (

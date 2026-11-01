@@ -48,6 +48,7 @@ import type {
   Contact,
   DeviceEvent,
   DeviceEventType,
+  GameSession,
   Reminder,
 } from "../types";
 
@@ -116,7 +117,11 @@ function toMs(v: unknown): number {
 const VALID_TYPES: DeviceEventType[] = ["sos", "possible_fall", "ok", "home", "location"];
 
 function normaliseEvent(id: string, raw: Record<string, unknown>, deviceId: string): DeviceEvent {
-  const type = String(raw.type ?? "location").toLowerCase() as DeviceEventType;
+  let rawType = String(raw.type ?? raw.event ?? raw.alert ?? raw.kind ?? "location").toLowerCase().trim();
+  if (rawType === "fall" || rawType === "fall_detected" || rawType === "fall_alert" || rawType === "fall_suspected") {
+    rawType = "possible_fall";
+  }
+  const type = VALID_TYPES.includes(rawType as DeviceEventType) ? (rawType as DeviceEventType) : "location";
   const lat = raw.lat ?? raw.latitude ?? null;
   const lon = raw.lon ?? raw.lng ?? raw.longitude ?? null;
   const latN = lat == null ? null : Number(lat);
@@ -127,15 +132,15 @@ function normaliseEvent(id: string, raw: Record<string, unknown>, deviceId: stri
       : latN != null && lonN != null && !(latN === 0 && lonN === 0);
   return {
     id,
-    type: VALID_TYPES.includes(type) ? type : "location",
-    deviceId: String(raw.deviceId ?? deviceId),
+    type,
+    deviceId: String(raw.deviceId ?? raw.device_id ?? deviceId),
     hasFix,
     lat: Number.isFinite(latN as number) ? latN : null,
     lon: Number.isFinite(lonN as number) ? lonN : null,
     fixAgeMs: raw.fixAgeMs != null ? Number(raw.fixAgeMs) : undefined,
-    experimental: raw.experimental != null ? Boolean(raw.experimental) : undefined,
-    createdAt: toMs(raw.createdAt ?? raw.timestamp ?? raw.ts),
-    uptimeMs: Number(raw.uptimeMs ?? 0),
+    experimental: raw.experimental != null ? Boolean(raw.experimental) : type === "possible_fall",
+    createdAt: toMs(raw.createdAt ?? raw.timestamp ?? raw.ts ?? raw.time),
+    uptimeMs: Number(raw.uptimeMs ?? raw.uptime ?? 0),
   };
 }
 
@@ -150,8 +155,7 @@ export function subscribeEvents(
   if (backend === "rtdb" && rtdb) {
     const q = rtQuery(
       ref(rtdb, `devices/${deviceId}/events`),
-      orderByChild("createdAt"),
-      limitToLast(50)
+      limitToLast(500)
     );
     return onValue(
       q,
@@ -331,5 +335,24 @@ export async function saveContact(c: Contact) {
 export async function deleteContact(id: string) {
   if (!isDemo) return removeItem("contacts", id);
   writeKey("contacts", readKey<Contact[]>("contacts", []).filter((c) => c.id !== id));
+}
+
+// ---------------------------------------------------------------
+// Cognitive Game & Quiz Sessions
+// ---------------------------------------------------------------
+export function subscribeGameSessions(cb: (sessions: GameSession[]) => void): () => void {
+  return subscribeMap<GameSession>(
+    "games",
+    (m) => cb(listFromMap(m).sort((a, b) => b.completedAt - a.completedAt)),
+    "games",
+    () => Object.fromEntries(readKey<GameSession[]>("games", []).map((g) => [g.id, g]))
+  );
+}
+
+export async function saveGameSession(session: GameSession) {
+  if (!isDemo) return setItem("games", session.id, session);
+  const all = readKey<GameSession[]>("games", []);
+  all.unshift(session);
+  writeKey("games", all.slice(0, 500));
 }
 

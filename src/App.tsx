@@ -28,7 +28,7 @@ import ApiContract from "./pages/dev/ApiContract";
 const WEARER_TABS: TabDef[] = [
   { to: "/wearer", label: "Home", icon: <Home className="w-5 h-5" /> },
   { to: "/wearer/reminders", label: "Reminders", icon: <Clock className="w-5 h-5" /> },
-  { to: "/wearer/games", label: "Games", icon: <Sparkles className="w-5 h-5" /> },
+  { to: "/wearer/games", label: "Activity", icon: <Sparkles className="w-5 h-5" /> },
   { to: "/wearer/family", label: "Family", icon: <Heart className="w-5 h-5" /> },
 ];
 
@@ -51,6 +51,8 @@ function SettingsFab() {
   );
 }
 
+import EmergencyAlertOverlay from "./components/EmergencyAlertOverlay";
+
 /** Route guard: requires a logged-in session with the given role. */
 function RequireRole({
   role,
@@ -65,6 +67,7 @@ function RequireRole({
     return <Navigate to={session.role === "patient" ? "/wearer" : "/caregiver"} replace />;
   return (
     <div className="max-w-md mx-auto">
+      <EmergencyAlertOverlay />
       <SettingsFab />
       <Outlet />
       <BottomNav tabs={tabs} />

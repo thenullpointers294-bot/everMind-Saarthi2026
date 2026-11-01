@@ -20,8 +20,9 @@ export function formatTime12(time: string): string {
   return `${hh}:${String(m).padStart(2, "0")} ${ampm}`;
 }
 
-/** Next not-yet-done reminder today (or the first one tomorrow). */
+/** Next not-yet-done reminder today (or upcoming in schedule). */
 export function nextReminder(reminders: Reminder[], now = new Date()): Reminder | null {
+  if (!reminders.length) return null;
   const nowMin = now.getHours() * 60 + now.getMinutes();
   const today = reminders
     .filter((r) => isForToday(r, now) && !isDoneToday(r, now) && minutesOf(r.time) >= nowMin)
@@ -31,7 +32,9 @@ export function nextReminder(reminders: Reminder[], now = new Date()): Reminder 
   const tmrw = reminders
     .filter((r) => isForToday(r, tomorrow))
     .sort((a, b) => minutesOf(a.time) - minutesOf(b.time));
-  return tmrw[0] ?? null;
+  if (tmrw.length) return tmrw[0];
+  // Fallback to the earliest scheduled reminder
+  return reminders.slice().sort((a, b) => minutesOf(a.time) - minutesOf(b.time))[0] ?? null;
 }
 
 export const REMINDER_ICONS: Record<Reminder["type"], string> = {

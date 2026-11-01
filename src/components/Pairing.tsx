@@ -1,8 +1,9 @@
 import { useState } from "react";
 import { QRCodeSVG } from "qrcode.react";
-import { Link2, Copy, Check, Share2, Unlink } from "lucide-react";
+import { Link2, Copy, Check, Unlink } from "lucide-react";
 import { useApp } from "../context/AppContext";
 import { linkToPatient, unlinkPatient } from "../services/authService";
+import { copyToClipboard } from "../utils/clipboard";
 import { Card, Badge } from "./ui";
 
 /** Shown on the PATIENT side — their unique code for caretakers to enter. */
@@ -13,21 +14,10 @@ export function PatientCodeCard({ compact = false }: { compact?: boolean }) {
   if (!code) return null;
 
   const copy = async () => {
-    try {
-      await navigator.clipboard.writeText(code);
+    const ok = await copyToClipboard(code);
+    if (ok) {
       setCopied(true);
-      setTimeout(() => setCopied(false), 1500);
-    } catch {
-      /* ignore */
-    }
-  };
-
-  const share = async () => {
-    const text = `My EverMind connection code is ${code}. Enter it in your caregiver app to connect with me.`;
-    if (navigator.share) {
-      await navigator.share({ title: "EverMind Pair Code", text }).catch(() => {});
-    } else {
-      copy();
+      setTimeout(() => setCopied(false), 2000);
     }
   };
 
@@ -45,20 +35,13 @@ export function PatientCodeCard({ compact = false }: { compact?: boolean }) {
           <div className="rounded-2xl bg-slate-900 text-white text-center py-3 px-2 font-mono text-2xl font-bold tracking-[0.2em] select-all shadow-sm">
             {code}
           </div>
-          <div className="mt-2.5 flex gap-2">
+          <div className="mt-2.5">
             <button
               onClick={copy}
-              className="flex-1 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 py-2 text-xs font-semibold flex items-center justify-center gap-1.5 transition cursor-pointer"
+              className="w-full rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 py-2 text-xs font-semibold flex items-center justify-center gap-1.5 transition cursor-pointer"
             >
               {copied ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
               <span>{copied ? "Copied" : "Copy"}</span>
-            </button>
-            <button
-              onClick={share}
-              className="flex-1 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 py-2 text-xs font-semibold flex items-center justify-center gap-1.5 transition cursor-pointer"
-            >
-              <Share2 className="w-3.5 h-3.5" />
-              <span>Share</span>
             </button>
           </div>
         </div>
@@ -134,7 +117,7 @@ export function LinkPatientCard() {
           value={code}
           onChange={(e) => setCode(e.target.value.toUpperCase())}
           onKeyDown={(e) => e.key === "Enter" && connect()}
-          placeholder="EM-XXXXXX"
+          placeholder="MG-XXXXXX"
           maxLength={9}
           className="flex-1 rounded-xl border border-slate-200 px-3.5 py-2.5 font-mono text-base font-semibold tracking-wider uppercase outline-none focus:border-slate-800 focus:ring-1 focus:ring-slate-800 transition"
         />

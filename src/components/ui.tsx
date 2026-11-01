@@ -142,14 +142,21 @@ export function FreshnessBadge({
 }: {
   freshness: "recent" | "updated" | "old" | "none";
 }) {
-  if (freshness === "none") return <Badge tone="slate">No location yet</Badge>;
-  const map = {
-    recent: { tone: "green" as const, label: "Live (<1 min)" },
-    updated: { tone: "blue" as const, label: "Recent (<10 min)" },
-    old: { tone: "amber" as const, label: "Stale (>10 min)" },
-  };
-  const m = map[freshness];
-  return <Badge tone={m.tone}>{m.label}</Badge>;
+  if (freshness === "none") return <Badge tone="slate">Location unavailable</Badge>;
+  if (freshness === "recent") {
+    return (
+      <Badge tone="green" className="font-medium">
+        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+        Live
+      </Badge>
+    );
+  }
+  return (
+    <Badge tone="blue" className="font-medium">
+      <span className="w-1.5 h-1.5 rounded-full bg-blue-500" />
+      Synced
+    </Badge>
+  );
 }
 
 export function BigButton({

@@ -63,7 +63,18 @@ function ReminderEditor({ initial, onClose }: { initial?: Reminder; onClose: () 
         </select>
       </div>
       <div>
-        <p className="text-[11px] text-slate-500 mb-1.5 font-medium">Repeat Days (all unselected = every day)</p>
+        <div className="flex items-center justify-between mb-1.5">
+          <p className="text-[11px] text-slate-500 font-medium">Repeat Schedule</p>
+          <button
+            type="button"
+            onClick={() => setR({ ...r, days: [] })}
+            className={`text-[11px] font-semibold transition cursor-pointer ${
+              r.days.length === 0 ? "text-emerald-700 font-bold" : "text-blue-600 hover:text-blue-700"
+            }`}
+          >
+            {r.days.length === 0 ? "✓ Every Day (Active)" : "Set to Every Day"}
+          </button>
+        </div>
         <div className="flex gap-1.5">
           {DAY_LABELS.map((d, i) => (
             <button
@@ -85,6 +96,9 @@ function ReminderEditor({ initial, onClose }: { initial?: Reminder; onClose: () 
             </button>
           ))}
         </div>
+        <p className="text-[10px] text-slate-400 mt-1">
+          {r.days.length === 0 ? "Repeats every single day" : `Repeats on ${r.days.map((d) => DAY_LABELS[d]).join(", ")}`}
+        </p>
       </div>
       <div className="flex gap-2 pt-1">
         <button
@@ -123,7 +137,10 @@ function RemindersSection() {
           <h2 className="font-semibold text-slate-900 text-sm">Daily Reminders</h2>
         </div>
         <button
-          onClick={() => setAdding(true)}
+          onClick={() => {
+            setEditing(null);
+            setAdding(true);
+          }}
           className="rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold px-3 py-1.5 flex items-center gap-1 transition cursor-pointer"
         >
           <Plus className="w-3.5 h-3.5" />
@@ -131,7 +148,12 @@ function RemindersSection() {
         </button>
       </div>
       <div className="space-y-2">
-        {adding && <ReminderEditor onClose={() => setAdding(false)} />}
+        {adding && (
+          <ReminderEditor
+            key="new-reminder-form"
+            onClose={() => setAdding(false)}
+          />
+        )}
         {reminders.map((r) =>
           editing === r.id ? (
             <ReminderEditor key={r.id} initial={r} onClose={() => setEditing(null)} />
@@ -166,65 +188,73 @@ function RemindersSection() {
 }
 
 // ---------------- Contacts ----------------
+function ContactEditor({
+  initial,
+  onSave,
+  onClose,
+}: {
+  initial: Contact;
+  onSave: (c: Contact) => void;
+  onClose: () => void;
+}) {
+  const [v, setV] = useState(initial);
+  return (
+    <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 space-y-2.5">
+      <input
+        value={v.name}
+        onChange={(e) => setV({ ...v, name: e.target.value })}
+        placeholder="Contact Name"
+        className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-medium text-slate-800 outline-none focus:border-slate-800 focus:ring-1 focus:ring-slate-800 transition"
+      />
+      <input
+        value={v.relation}
+        onChange={(e) => setV({ ...v, relation: e.target.value })}
+        placeholder="Relationship (e.g. Daughter, Caretaker)"
+        className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-medium text-slate-800 outline-none focus:border-slate-800 focus:ring-1 focus:ring-slate-800 transition"
+      />
+      <input
+        value={v.phone}
+        onChange={(e) => setV({ ...v, phone: e.target.value })}
+        placeholder="Phone Number (+91 98765 43210)"
+        className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-mono font-medium text-slate-800 outline-none focus:border-slate-800 focus:ring-1 focus:ring-slate-800 transition"
+      />
+      <label className="flex items-center gap-2 text-xs font-medium text-slate-600 pt-1 cursor-pointer">
+        <input
+          type="checkbox"
+          checked={Boolean(v.isPrimary)}
+          onChange={(e) => setV({ ...v, isPrimary: e.target.checked })}
+          className="rounded border-slate-300 text-slate-900 focus:ring-slate-800"
+        />
+        <span>Set as Primary Contact</span>
+      </label>
+      <div className="flex gap-2 pt-1">
+        <button
+          type="button"
+          onClick={() => {
+            if (v.name.trim()) {
+              onSave(v);
+              onClose();
+            }
+          }}
+          className="flex-1 rounded-xl bg-slate-900 hover:bg-slate-800 text-white py-2 text-xs font-semibold transition cursor-pointer"
+        >
+          Save Contact
+        </button>
+        <button
+          type="button"
+          onClick={onClose}
+          className="rounded-xl border border-slate-200 bg-white hover:bg-slate-100 px-3.5 py-2 text-xs font-medium text-slate-600 transition cursor-pointer"
+        >
+          Cancel
+        </button>
+      </div>
+    </div>
+  );
+}
+
 function ContactsSection() {
   const { contacts } = useApp();
   const [editing, setEditing] = useState<Contact | null>(null);
-
-  const Editor = ({ c }: { c: Contact }) => {
-    const [v, setV] = useState(c);
-    return (
-      <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 space-y-2.5">
-        <input
-          value={v.name}
-          onChange={(e) => setV({ ...v, name: e.target.value })}
-          placeholder="Contact Name"
-          className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-medium text-slate-800 outline-none focus:border-slate-800 focus:ring-1 focus:ring-slate-800 transition"
-        />
-        <input
-          value={v.relation}
-          onChange={(e) => setV({ ...v, relation: e.target.value })}
-          placeholder="Relationship (e.g. Daughter, Caretaker)"
-          className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-medium text-slate-800 outline-none focus:border-slate-800 focus:ring-1 focus:ring-slate-800 transition"
-        />
-        <input
-          value={v.phone}
-          onChange={(e) => setV({ ...v, phone: e.target.value })}
-          placeholder="Phone Number (+91 98765 43210)"
-          className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-mono font-medium text-slate-800 outline-none focus:border-slate-800 focus:ring-1 focus:ring-slate-800 transition"
-        />
-        <label className="flex items-center gap-2 text-xs font-medium text-slate-600 pt-1 cursor-pointer">
-          <input
-            type="checkbox"
-            checked={Boolean(v.isPrimary)}
-            onChange={(e) => setV({ ...v, isPrimary: e.target.checked })}
-            className="rounded border-slate-300 text-slate-900 focus:ring-slate-800"
-          />
-          <span>Set as Primary Contact</span>
-        </label>
-        <div className="flex gap-2 pt-1">
-          <button
-            type="button"
-            onClick={() => {
-              if (v.name.trim()) {
-                saveContact(v);
-                setEditing(null);
-              }
-            }}
-            className="flex-1 rounded-xl bg-slate-900 hover:bg-slate-800 text-white py-2 text-xs font-semibold transition cursor-pointer"
-          >
-            Save Contact
-          </button>
-          <button
-            type="button"
-            onClick={() => setEditing(null)}
-            className="rounded-xl border border-slate-200 bg-white hover:bg-slate-100 px-3.5 py-2 text-xs font-medium text-slate-600 transition cursor-pointer"
-          >
-            Cancel
-          </button>
-        </div>
-      </div>
-    );
-  };
 
   return (
     <Card>
@@ -250,7 +280,14 @@ function ContactsSection() {
         </button>
       </div>
       <div className="space-y-2">
-        {editing && <Editor c={editing} />}
+        {editing && (
+          <ContactEditor
+            key={editing.id}
+            initial={editing}
+            onSave={(c) => saveContact(c)}
+            onClose={() => setEditing(null)}
+          />
+        )}
         {contacts.map((c) => (
           <div key={c.id} className="flex items-center gap-3 rounded-xl bg-slate-50 border border-slate-100 p-3">
             <span
@@ -385,11 +422,48 @@ function PairingSection() {
 function HomeSection() {
   const { settings, updateSettings } = useApp();
   const [h, setH] = useState(settings.home);
+  const [locating, setLocating] = useState(false);
+
+  const detectLocation = () => {
+    if (!navigator.geolocation) {
+      alert("Geolocation is not supported by this browser.");
+      return;
+    }
+    setLocating(true);
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        setH((prev) => ({
+          ...prev,
+          lat: Number(pos.coords.latitude.toFixed(5)),
+          lon: Number(pos.coords.longitude.toFixed(5)),
+          label: prev.label === "Clock Tower, Dehradun" ? "My Home" : prev.label,
+        }));
+        setLocating(false);
+      },
+      (err) => {
+        alert("Failed to get location: " + err.message);
+        setLocating(false);
+      },
+      { enableHighAccuracy: true, timeout: 10000 }
+    );
+  };
+
   return (
     <Card>
-      <div className="flex items-center gap-2 mb-1">
-        <Home className="w-4 h-4 text-slate-700" />
-        <h2 className="font-semibold text-slate-900 text-sm">Home Geofence Anchor</h2>
+      <div className="flex items-center justify-between mb-1">
+        <div className="flex items-center gap-2">
+          <Home className="w-4 h-4 text-slate-700" />
+          <h2 className="font-semibold text-slate-900 text-sm">Home Geofence Anchor</h2>
+        </div>
+        <button
+          type="button"
+          onClick={detectLocation}
+          disabled={locating}
+          className="text-[11px] font-semibold text-blue-600 hover:text-blue-700 flex items-center gap-1 transition cursor-pointer disabled:opacity-50"
+        >
+          <MapPin className="w-3 h-3" />
+          <span>{locating ? "Detecting..." : "Use Current GPS"}</span>
+        </button>
       </div>
       <p className="text-xs text-slate-500 mb-3.5">
         Primary safe-zone reference coordinates used for navigation guidance and route mapping.
@@ -431,11 +505,23 @@ function HomeSection() {
 }
 
 export default function Manage() {
+  const { session } = useApp();
   return (
     <div className="pb-28 min-h-dvh bg-slate-50">
       <PageHeader title="Care Management" subtitle="Reminders, family circle, pendant pairing, and safe zones" />
       <div className="px-5 space-y-4 max-w-md mx-auto">
         <LinkPatientCard />
+        {!session?.linkedCode && (
+          <div className="rounded-2xl bg-amber-50 border border-amber-200/80 p-3.5 text-xs text-amber-800 flex items-start gap-2.5">
+            <span className="text-base">⚠️</span>
+            <div>
+              <p className="font-bold">Not Connected to Wearer</p>
+              <p className="mt-0.5 text-[11px] text-amber-700 leading-relaxed">
+                Please enter the 6-digit code shown on the wearer's phone in the box above so your reminders, contacts, and live location sync to their app.
+              </p>
+            </div>
+          </div>
+        )}
         <RemindersSection />
         <ContactsSection />
         <PairingSection />

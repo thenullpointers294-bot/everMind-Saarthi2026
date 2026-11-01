@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { 
   AlertOctagon, 
   Navigation, 
@@ -6,16 +6,114 @@ import {
   Clock, 
   Phone, 
   CheckCircle2, 
-  HeartHandshake 
+  HeartHandshake,
+  RefreshCw,
+  Compass,
+  Crosshair
 } from "lucide-react";
 import { useApp } from "../../context/AppContext";
-import { simulator } from "../../services/deviceService";
+import { simulator, calculateDistanceMeters } from "../../services/deviceService";
+import { broadcastDeviceLocation, watchDeviceCoordinates, type GeoCoords } from "../../services/geoService";
 import { nextReminder, formatTime12 } from "../../utils/reminderUtils";
 import { DemoBadge } from "../../components/ui";
+import LocationPickerModal from "../../components/LocationPickerModal";
 
 export default function WearerHome() {
   const { settings, reminders, contacts, now } = useApp();
   const [sent, setSent] = useState<"sos" | "home" | null>(null);
+
+  // Device Geolocation State
+  const [geoCoords, setGeoCoords] = useState<GeoCoords | null>(null);
+  const [geoStatus, setGeoStatus] = useState<"idle" | "syncing" | "active" | "error">("idle");
+  const [geoError, setGeoError] = useState<string | null>(null);
+  const [lastSyncTime, setLastSyncTime] = useState<Date | null>(null);
+  const [showPicker, setShowPicker] = useState(false);
+
+  const handleManualLocation = async (coords: { lat: number; lon: number; label?: string }) => {
+    setGeoCoords({
+      lat: coords.lat,
+      lon: coords.lon,
+      accuracy: 5,
+      timestamp: Date.now(),
+      source: "gps",
+      city: coords.label,
+    });
+    setGeoStatus("active");
+    await broadcastDeviceLocation(settings.deviceId, "location", { lat: coords.lat, lon: coords.lon });
+  };
+
+  const syncLocation = async (silent = false) => {
+    if (!silent) setGeoStatus("syncing");
+    try {
+      const coords = await broadcastDeviceLocation(settings.deviceId, "location");
+      setGeoCoords(coords);
+      setGeoStatus("active");
+      setGeoError(null);
+      setLastSyncTime(new Date());
+    } catch (err) {
+      if (!silent) {
+        setGeoStatus("error");
+        setGeoError(err instanceof Error ? err.message : "Could not acquire device location");
+      }
+    }
+  };
+
+  // Continuous live hardware GPS tracker (matches Google Maps blue dot behavior)
+  useEffect(() => {
+    let lastBroadcastMs = 0;
+    let lastBroadcastCoord: { lat: number; lon: number } | null = null;
+
+    const maybeBroadcast = (coords: { lat: number; lon: number }, force = false) => {
+      const now = Date.now();
+      let shouldSend = force || now - lastBroadcastMs >= 20000;
+      if (!shouldSend && lastBroadcastCoord) {
+        const movedMeters = calculateDistanceMeters(
+          lastBroadcastCoord.lat,
+          lastBroadcastCoord.lon,
+          coords.lat,
+          coords.lon
+        );
+        if (movedMeters > 25) {
+          shouldSend = true;
+        }
+      }
+      if (shouldSend) {
+        lastBroadcastMs = now;
+        lastBroadcastCoord = { lat: coords.lat, lon: coords.lon };
+        broadcastDeviceLocation(settings.deviceId, "location", {
+          lat: coords.lat,
+          lon: coords.lon,
+        });
+      }
+    };
+
+    syncLocation(false);
+
+    const unwatch = watchDeviceCoordinates(
+      (liveCoords) => {
+        setGeoCoords(liveCoords);
+        setGeoStatus("active");
+        setGeoError(null);
+        maybeBroadcast(liveCoords, false);
+      },
+      (err) => {
+        if (err.code === 1) {
+          setGeoError("Location permission denied. Click below to allow or pick on map.");
+        }
+      }
+    );
+
+    const timer = setInterval(() => {
+      if (geoCoords) {
+        maybeBroadcast(geoCoords, true);
+      }
+    }, 30000);
+
+    return () => {
+      unwatch();
+      clearInterval(timer);
+    };
+  }, [settings.deviceId]);
 
   const hour = now.getHours();
   const greeting = hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
@@ -28,13 +126,26 @@ export default function WearerHome() {
   const next = nextReminder(reminders, now);
   const primary = contacts.find((c) => c.isPrimary) ?? contacts[0];
 
+  const distance = geoCoords
+    ? calculateDistanceMeters(geoCoords.lat, geoCoords.lon, settings.home.lat, settings.home.lon)
+    : null;
+
   const sendSOS = async () => {
-    await simulator.pressSOS(settings.deviceId);
+    try {
+      await broadcastDeviceLocation(settings.deviceId, "sos");
+    } catch {
+      await simulator.pressSOS(settings.deviceId);
+    }
     setSent("sos");
     setTimeout(() => setSent(null), 6000);
   };
+
   const sendHome = async () => {
-    await simulator.pressHome(settings.deviceId);
+    try {
+      await broadcastDeviceLocation(settings.deviceId, "home");
+    } catch {
+      await simulator.pressHome(settings.deviceId);
+    }
     setSent("home");
     setTimeout(() => setSent(null), 6000);
   };
@@ -59,21 +170,70 @@ export default function WearerHome() {
       </div>
 
       <div className="px-5 mt-5 space-y-4 max-w-md mx-auto">
-        {/* Orientation card */}
-        <div className="rounded-2xl bg-white border border-slate-200/80 p-4 shadow-[0_1px_3px_rgba(15,23,42,0.03)] flex items-start gap-3.5">
-          <div className="p-2.5 rounded-xl bg-slate-100 text-slate-700 shrink-0">
-            <MapPin className="w-5 h-5 stroke-[2]" />
+        {/* Device Live GPS Location card */}
+        <div className="rounded-2xl bg-white border border-slate-200/80 p-4 shadow-[0_1px_3px_rgba(15,23,42,0.03)]">
+          <div className="flex items-start justify-between gap-3">
+            <div className="flex items-start gap-3.5">
+              <div className={`p-2.5 rounded-xl shrink-0 ${geoStatus === "active" ? "bg-emerald-50 text-emerald-700" : geoStatus === "syncing" ? "bg-sky-50 text-sky-700" : "bg-slate-100 text-slate-700"}`}>
+                <Crosshair className={`w-5 h-5 stroke-[2] ${geoStatus === "syncing" ? "animate-spin" : ""}`} />
+              </div>
+              <div>
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
+                    Location
+                  </span>
+                  {geoStatus === "active" && (
+                    <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded-md">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                      Live
+                    </span>
+                  )}
+                </div>
+                <p className="font-semibold text-slate-900 text-base leading-snug mt-0.5">
+                  {geoCoords
+                    ? distance != null && distance <= 250
+                      ? `Safe at home${geoCoords.city ? ` in ${geoCoords.city}` : ""}`
+                      : `Away from home (~${distance != null && distance < 1000 ? `${distance}m` : `${((distance ?? 0) / 1000).toFixed(1)}km`})${geoCoords.city ? ` · ${geoCoords.city}` : ""}`
+                    : geoStatus === "syncing"
+                    ? "Acquiring location..."
+                    : "Tap to share location"}
+                </p>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  {geoCoords?.city ? geoCoords.city : settings.home.label}
+                </p>
+              </div>
+            </div>
+
+            <button
+              onClick={() => syncLocation(false)}
+              disabled={geoStatus === "syncing"}
+              title="Sync current phone/laptop location"
+              className="p-2 rounded-xl text-slate-500 hover:text-slate-900 hover:bg-slate-100 transition cursor-pointer shrink-0 disabled:opacity-40"
+            >
+              <RefreshCw className={`w-4 h-4 ${geoStatus === "syncing" ? "animate-spin" : ""}`} />
+            </button>
           </div>
-          <div>
-            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
-              Current Location
-            </span>
-            <p className="font-semibold text-slate-900 text-base leading-snug mt-0.5">
-              You are safe at home.
-            </p>
-            <p className="text-xs text-slate-500 mt-0.5">{settings.home.label}</p>
+
+          {/* Action Row: Pick exact map position or retry */}
+          <div className="mt-3 pt-3 border-t border-slate-100 flex items-center justify-between gap-2 flex-wrap">
+            <button
+              onClick={() => setShowPicker(true)}
+              className="text-xs font-semibold text-sky-700 hover:text-sky-800 bg-sky-50 hover:bg-sky-100 px-3 py-1.5 rounded-xl border border-sky-200/80 transition cursor-pointer flex items-center gap-1.5"
+            >
+              <MapPin className="w-3.5 h-3.5" />
+              <span>Choose Location on Map</span>
+            </button>
           </div>
         </div>
+
+        {showPicker && (
+          <LocationPickerModal
+            initialLat={geoCoords?.lat ?? settings.home.lat}
+            initialLon={geoCoords?.lon ?? settings.home.lon}
+            onSelect={handleManualLocation}
+            onClose={() => setShowPicker(false)}
+          />
+        )}
 
         {/* Next reminder */}
         {next && (
@@ -98,7 +258,7 @@ export default function WearerHome() {
             <span>
               {sent === "sos"
                 ? "Help alert sent. Caregivers have been notified."
-                : "Caregiver has received your location and can guide you home."}
+                : "Opening Google Maps directions to home. Caregiver notified."}
             </span>
           </div>
         )}
@@ -116,13 +276,21 @@ export default function WearerHome() {
         </button>
 
         {/* Take me home */}
-        <button
+        <a
+          href={`https://www.google.com/maps/dir/?api=1&destination=${settings.home.lat},${settings.home.lon}`}
+          target="_blank"
+          rel="noopener noreferrer"
           onClick={sendHome}
-          className="w-full rounded-2xl bg-slate-900 hover:bg-slate-800 text-white py-4 px-5 shadow-sm active:scale-[0.98] transition-all cursor-pointer flex items-center justify-center gap-3"
+          className="w-full rounded-2xl bg-slate-900 hover:bg-slate-800 text-white py-4 px-5 shadow-sm active:scale-[0.98] transition-all cursor-pointer flex items-center justify-between no-underline"
         >
-          <Navigation className="w-5 h-5 text-slate-300" />
-          <span className="text-sm font-semibold tracking-tight">Take Me Home</span>
-        </button>
+          <div className="flex items-center gap-3">
+            <Navigation className="w-5 h-5 text-indigo-400" />
+            <span className="text-sm font-semibold tracking-tight">Take Me Home</span>
+          </div>
+          <span className="text-[11px] text-slate-400 font-medium">
+            Google Maps ↗
+          </span>
+        </a>
 
         {/* Call family section */}
         <div className="pt-2">
