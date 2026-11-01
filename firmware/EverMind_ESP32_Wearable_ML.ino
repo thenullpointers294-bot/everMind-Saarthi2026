@@ -50,8 +50,8 @@ FEATURES INTEGRATED:
 // ========================================================
 // 2. NETWORK & CLOUD CONFIGURATION
 // ========================================================
-const char* WIFI_SSID     = "hotspot";
-const char* WIFI_PASSWORD = "password";
+const char* WIFI_SSID     = "ARUBA5";
+const char* WIFI_PASSWORD = "internet";
 
 // Firebase Realtime Database
 const char* FIREBASE_HOST = "https://ever-mind-default-rtdb.asia-southeast1.firebasedatabase.app";
